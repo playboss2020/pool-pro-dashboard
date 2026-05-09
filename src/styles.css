@@ -2453,6 +2453,351 @@ button:disabled {
   transform: translateX(18px);
 }
 
+.pro-app-shell {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  color: #12314b;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(239, 249, 253, 0.94)),
+    linear-gradient(135deg, #d9f7ff, #f7fbff 48%, #e8f5ed);
+}
+
+.pro-sidebar {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 28px 22px;
+  border-right: 1px solid rgba(109, 151, 178, 0.24);
+  background: rgba(251, 254, 255, 0.82);
+  backdrop-filter: blur(18px);
+}
+
+.pro-brand,
+.pro-account-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pro-brand-mark {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #ffffff;
+  background: linear-gradient(160deg, #0a83bd, #0b5c92);
+  box-shadow: 0 12px 24px rgba(10, 92, 146, 0.22);
+}
+
+.pro-brand span,
+.pro-account-card span {
+  display: block;
+  color: #6a879c;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.pro-brand strong,
+.pro-account-card strong {
+  display: block;
+  color: #102f48;
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.pro-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.pro-nav button,
+.pro-toolbar button,
+.pro-device-footer button,
+.pro-account-card button {
+  border: 0;
+  font-weight: 850;
+}
+
+.pro-nav button {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border-radius: 12px;
+  color: #4f7189;
+  background: transparent;
+  text-align: left;
+}
+
+.pro-nav button.active {
+  color: #0b6294;
+  background: rgba(26, 164, 214, 0.14);
+}
+
+.pro-account-card {
+  margin-top: auto;
+  display: grid;
+  align-items: stretch;
+  padding: 14px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(36, 105, 142, 0.12);
+}
+
+.pro-account-card button {
+  min-height: 38px;
+  border-radius: 12px;
+  color: #0b6f9d;
+  background: #e9f8ff;
+}
+
+.pro-main {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 22px;
+  padding: 32px;
+}
+
+.pro-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 460px);
+  align-items: end;
+  gap: 20px;
+}
+
+.pro-header h1 {
+  margin: 0;
+  color: #102f48;
+  font-size: 38px;
+  line-height: 1;
+}
+
+.pro-header p {
+  max-width: 720px;
+  margin: 10px 0 0;
+  color: #638096;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.pro-search {
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border-radius: 14px;
+  color: #6a879c;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(36, 105, 142, 0.1);
+}
+
+.pro-search input {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: #12314b;
+  background: transparent;
+  font-weight: 750;
+}
+
+.pro-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.pro-stat-card {
+  display: grid;
+  gap: 8px;
+  min-height: 112px;
+  padding: 18px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(36, 105, 142, 0.1);
+}
+
+.pro-stat-card span {
+  color: #6a879c;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.pro-stat-card strong {
+  color: #0a6f9d;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.pro-stat-card.warning strong {
+  color: #d45b2b;
+}
+
+.pro-stat-card.heat strong {
+  color: #e97a25;
+}
+
+.pro-stat-card.money strong {
+  color: #168856;
+}
+
+.pro-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.pro-toolbar button {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: #5c7b91;
+  background: rgba(255, 255, 255, 0.72);
+  text-transform: capitalize;
+}
+
+.pro-toolbar button.active {
+  color: #ffffff;
+  background: #0b76a6;
+}
+
+.pro-device-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.pro-device-card {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(95, 152, 184, 0.16);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 12px 30px rgba(36, 105, 142, 0.1);
+}
+
+.pro-device-card.attention {
+  border-color: rgba(239, 104, 54, 0.32);
+  box-shadow: 0 12px 30px rgba(161, 75, 44, 0.12);
+}
+
+.pro-device-topline,
+.pro-device-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.pro-device-topline {
+  align-items: flex-start;
+}
+
+.pro-device-footer {
+  align-items: center;
+}
+
+.pro-device-topline h2 {
+  margin: 0;
+  color: #112f48;
+  font-size: 20px;
+}
+
+.pro-device-topline p {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 6px 0 0;
+  color: #6b879b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pro-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.pro-status.online {
+  color: #087946;
+  background: rgba(30, 197, 119, 0.16);
+}
+
+.pro-status.offline {
+  color: #a23b20;
+  background: rgba(255, 116, 72, 0.16);
+}
+
+.pro-device-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pro-device-metrics div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #f0f8fc;
+}
+
+.pro-device-metrics svg {
+  color: #0b82b7;
+}
+
+.pro-device-metrics span,
+.pro-device-footer span {
+  color: #6b879b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.pro-device-metrics strong {
+  color: #12314b;
+  font-size: 17px;
+}
+
+.pro-device-footer button {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  color: #ffffff;
+  background: linear-gradient(160deg, #0c8abf, #096b9f);
+}
+
+.pro-empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 28px;
+  border-radius: 16px;
+  color: #6b879b;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.pro-empty-state strong {
+  color: #12314b;
+  font-size: 18px;
+}
+
 @media (max-width: 430px) {
   .app-background {
     padding: 0;

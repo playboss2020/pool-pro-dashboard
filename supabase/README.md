@@ -92,6 +92,31 @@ MVP placeholders:
 - offline status should eventually be maintained by a scheduled server job
 - schedule conflict validation belongs in the app or another Edge Function
 
+## Pro / Multi-Property Accounts
+
+Run:
+
+```sql
+-- paste contents of:
+-- supabase/migrations/202605080009_pro_organizations.sql
+```
+
+The Pro app uses these tables:
+
+- `organizations`
+- `organization_members`
+- `devices.organization_id`
+- device property fields: `property_name`, `address`, `city`, `state`, `zip`, `property_notes`
+
+Create the Pro login normally in Supabase Auth or from the app:
+
+```text
+Email: pro@workflowpool.test
+Password: WorkflowPro123!
+```
+
+After the user exists, copy its Auth UUID and run the test setup block at the bottom of `202605080009_pro_organizations.sql`. That links the login to a Pro organization and assigns `pool-hub-001` as the first property.
+
 ## Optional MQTT Fast Commands
 
 MQTT is the fast wake path for commands. Supabase remains the database and backup polling path.

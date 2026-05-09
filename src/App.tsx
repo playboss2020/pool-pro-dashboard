@@ -5,11 +5,13 @@ import { useAuth } from "./hooks/useAuth";
 import { useAlerts } from "./hooks/useAlerts";
 import { useDevice } from "./hooks/useDevice";
 import { useDevices } from "./hooks/useDevices";
+import { useProAccount } from "./hooks/useProAccount";
 import { HubSwitcherSheet } from "./components/HubSwitcherSheet";
 import { AlertsPage } from "./pages/AlertsPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { DashboardPage, NoDeviceDashboard } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
+import { ProDashboardPage } from "./pages/ProDashboardPage";
 import { SchedulesPage } from "./pages/SchedulesPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { deviceId, selectDeviceId } from "./lib/supabase";
@@ -17,18 +19,29 @@ import "./styles.css";
 
 type Tab = "dashboard" | "schedules" | "analytics" | "alerts" | "settings";
 const claimSuccessStorageKey = "pool-dashboard-claim-success";
+const proDeviceModeStorageKey = "pool-pro-open-device-dashboard";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [showHubSwitcher, setShowHubSwitcher] = useState(false);
   const [showAddDevice, setShowAddDevice] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState("");
+  const [showProDeviceDashboard, setShowProDeviceDashboard] = useState(() => {
+    try {
+      return window.sessionStorage.getItem(proDeviceModeStorageKey) === "true";
+    } catch {
+      return false;
+    }
+  });
   const auth = useAuth();
-  const { device, loading, error, refresh, refreshBurst } = useDevice();
-  const devices = useDevices(Boolean(auth.user));
-  const alerts = useAlerts(Boolean(auth.user));
-  const checkingDevices = Boolean(auth.user) && devices.loading;
-  const hasNoDevices = Boolean(auth.user) && !devices.loading && devices.devices.length === 0;
+  const proAccount = useProAccount(auth.user?.id);
+  const singleDeviceModeEnabled = Boolean(auth.user) && (!proAccount.account || showProDeviceDashboard);
+  const { device, loading, error, refresh, refreshBurst } = useDevice(singleDeviceModeEnabled);
+  const devices = useDevices(Boolean(auth.user) && !proAccount.account);
+  const alerts = useAlerts(singleDeviceModeEnabled);
+  const isProAccount = Boolean(proAccount.account);
+  const checkingDevices = Boolean(auth.user) && !isProAccount && devices.loading;
+  const hasNoDevices = Boolean(auth.user) && !isProAccount && !devices.loading && devices.devices.length === 0;
 
   useEffect(() => {
     try {
@@ -92,13 +105,53 @@ export default function App() {
     return <LoginPage />;
   }
 
+  if (proAccount.loading) {
+    return (
+      <div className="login-screen">
+        <div className="loading-box">Checking account access...</div>
+      </div>
+    );
+  }
+
+  if (proAccount.account && !showProDeviceDashboard) {
+    return (
+      <ProDashboardPage
+        organization={proAccount.account.organization}
+        membership={proAccount.account.membership}
+        devices={proAccount.account.devices}
+        onSignOut={auth.signOut}
+        onOpenDevice={(nextDeviceId) => {
+          selectDeviceId(nextDeviceId);
+          try {
+            window.sessionStorage.setItem(proDeviceModeStorageKey, "true");
+          } catch {
+            // ignore
+          }
+          window.location.reload();
+        }}
+      />
+    );
+  }
+
   return (
     <PoolShell
       activeTab={activeTab}
       onTabChange={setActiveTab}
       alertCount={alerts.activeAlertCount}
-      onHubSwitcherOpen={() => setShowHubSwitcher(true)}
+      onHubSwitcherOpen={() => {
+        if (proAccount.account) {
+          try {
+            window.sessionStorage.removeItem(proDeviceModeStorageKey);
+          } catch {
+            // ignore
+          }
+          setShowProDeviceDashboard(false);
+          return;
+        }
+        setShowHubSwitcher(true);
+      }}
     >
+      {proAccount.error ? <div className="error-box">{proAccount.error}</div> : null}
       {claimSuccess ? <div className="success-box app-success-banner">{claimSuccess}</div> : null}
       {activeTab === "dashboard" && checkingDevices ? <div className="loading-box">Checking your hubs...</div> : null}
       {activeTab === "dashboard" && !checkingDevices && hasNoDevices ? (

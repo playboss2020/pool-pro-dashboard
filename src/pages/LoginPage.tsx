@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase";
 type AuthMode = "login" | "signup";
 
 export function LoginPage() {
-  const [email, setEmail] = useState("pooladmin@example.com");
+  const [email, setEmail] = useState("pro@workflowpool.test");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<AuthMode>("login");
   const [error, setError] = useState("");

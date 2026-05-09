@@ -4,9 +4,16 @@ import { isDirectMqttConfigured, publishDirectMqttCommand } from "./mqttClient";
 export type PoolDevice = {
   id: string;
   user_id: string;
+  organization_id?: string | null;
   device_id: string;
   serial_number: string | null;
   name: string;
+  property_name?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+  property_notes?: string | null;
   current_temp: number | null;
   pump_on: boolean;
   heater_enabled: boolean;
@@ -99,6 +106,25 @@ export type UnclaimedDeviceResponse = {
   message: string;
 };
 
+export type Organization = {
+  id: string;
+  name: string;
+  plan: "pro" | "enterprise" | string;
+  created_at: string;
+};
+
+export type OrganizationMember = {
+  organization_id: string;
+  user_id: string;
+  role: "owner" | "manager" | "technician" | "viewer" | string;
+};
+
+export type ProAccount = {
+  organization: Organization;
+  membership: OrganizationMember;
+  devices: PoolDevice[];
+};
+
 const DEVICE_SELECT_COLUMNS = [
   "id",
   "user_id",
@@ -128,6 +154,17 @@ const DEVICE_SELECT_COLUMNS = [
   "updated_at",
 ].join(",");
 
+const PRO_DEVICE_SELECT_COLUMNS = [
+  DEVICE_SELECT_COLUMNS,
+  "organization_id",
+  "property_name",
+  "address",
+  "city",
+  "state",
+  "zip",
+  "property_notes",
+].join(",");
+
 export async function fetchDevice() {
   const client = requireSupabase();
   const { data, error } = await client
@@ -149,6 +186,52 @@ export async function fetchDevices() {
 
   if (error) throw error;
   return (data ?? []) as unknown as PoolDevice[];
+}
+
+export async function fetchProAccount(userId: string): Promise<ProAccount | null> {
+  const client = requireSupabase();
+  const { data: membershipData, error: membershipError } = await client
+    .from("organization_members")
+    .select("organization_id,user_id,role,organization:organizations(id,name,plan,created_at)")
+    .eq("user_id", userId)
+    .limit(1)
+    .maybeSingle();
+
+  if (membershipError) {
+    // If the Pro tables have not been deployed yet, keep the regular homeowner
+    // dashboard working instead of blocking login.
+    if (membershipError.code === "42P01" || membershipError.code === "42703") return null;
+    throw membershipError;
+  }
+
+  if (!membershipData) return null;
+
+  const organization = Array.isArray(membershipData.organization)
+    ? membershipData.organization[0]
+    : membershipData.organization;
+
+  if (!organization) return null;
+
+  const membership: OrganizationMember = {
+    organization_id: String(membershipData.organization_id),
+    user_id: String(membershipData.user_id),
+    role: String(membershipData.role),
+  };
+
+  const { data: devices, error: devicesError } = await client
+    .from("devices")
+    .select(PRO_DEVICE_SELECT_COLUMNS)
+    .eq("organization_id", organization.id)
+    .order("property_name", { ascending: true, nullsFirst: false })
+    .order("name", { ascending: true });
+
+  if (devicesError) throw devicesError;
+
+  return {
+    organization: organization as Organization,
+    membership,
+    devices: (devices ?? []) as unknown as PoolDevice[],
+  };
 }
 
 export async function sendCommand(

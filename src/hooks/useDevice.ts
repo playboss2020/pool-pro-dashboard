@@ -14,9 +14,9 @@ function numberOrNull(value: unknown) {
   return Number.isFinite(numberValue) ? numberValue : null;
 }
 
-export function useDevice() {
+export function useDevice(enabled = true) {
   const [device, setDevice] = useState<PoolDevice | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState("");
   const lastDeviceJsonRef = useRef("");
   const lastDeviceUpdatedAtRef = useRef(0);
@@ -84,6 +84,13 @@ export function useDevice() {
   );
 
   const refresh = useCallback(async () => {
+    if (!enabled) {
+      setDeviceIfChanged(null);
+      setLoading(false);
+      setError("");
+      return;
+    }
+
     if (refreshInFlightRef.current) return;
     refreshInFlightRef.current = true;
 
@@ -97,7 +104,7 @@ export function useDevice() {
       refreshInFlightRef.current = false;
       setLoading(false);
     }
-  }, [setDeviceIfChanged]);
+  }, [enabled, setDeviceIfChanged]);
 
   const refreshBurst = useCallback(() => {
     refreshBurstTimeoutsRef.current.forEach((timeout) => window.clearTimeout(timeout));
@@ -120,6 +127,8 @@ export function useDevice() {
   }, [refresh]);
 
   useEffect(() => {
+    if (!enabled) return undefined;
+
     const interval = window.setInterval(() => {
       void refresh();
     }, document.visibilityState === "hidden" ? DEVICE_HIDDEN_REFRESH_MS : DEVICE_REFRESH_MS);
@@ -139,11 +148,11 @@ export function useDevice() {
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleFocus);
     };
-  }, [refresh]);
+  }, [enabled, refresh]);
 
   useEffect(() => {
     const client = supabase;
-    if (!client) return undefined;
+    if (!enabled || !client) return undefined;
 
     const channel = client
       .channel(`device:${deviceId}`)
@@ -164,9 +173,12 @@ export function useDevice() {
     return () => {
       void client.removeChannel(channel);
     };
-  }, [setDeviceIfChanged]);
+  }, [enabled, setDeviceIfChanged]);
 
-  useEffect(() => subscribeDirectMqttState(applyMqttState), [applyMqttState]);
+  useEffect(() => {
+    if (!enabled) return undefined;
+    return subscribeDirectMqttState(applyMqttState);
+  }, [applyMqttState, enabled]);
 
   return { device, loading, error, refresh, refreshBurst };
 }
