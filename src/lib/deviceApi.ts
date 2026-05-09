@@ -198,7 +198,7 @@ export async function fetchProAccount(userId: string): Promise<ProAccount | null
   const client = requireSupabase();
   const { data: membershipData, error: membershipError } = await client
     .from("organization_members")
-    .select("organization_id,user_id,role,organization:organizations(id,name,plan,created_at)")
+    .select("organization_id,user_id,role")
     .eq("user_id", userId)
     .limit(1)
     .maybeSingle();
@@ -212,17 +212,19 @@ export async function fetchProAccount(userId: string): Promise<ProAccount | null
 
   if (!membershipData) return null;
 
-  const organization = Array.isArray(membershipData.organization)
-    ? membershipData.organization[0]
-    : membershipData.organization;
-
-  if (!organization) return null;
-
   const membership: OrganizationMember = {
     organization_id: String(membershipData.organization_id),
     user_id: String(membershipData.user_id),
     role: String(membershipData.role),
   };
+
+  const { data: organization, error: organizationError } = await client
+    .from("organizations")
+    .select("id,name,plan,created_at")
+    .eq("id", membership.organization_id)
+    .single<Organization>();
+
+  if (organizationError) throw organizationError;
 
   const { data: devices, error: devicesError } = await client
     .from("devices")
@@ -234,7 +236,7 @@ export async function fetchProAccount(userId: string): Promise<ProAccount | null
   if (devicesError) throw devicesError;
 
   return {
-    organization: organization as Organization,
+    organization,
     membership,
     devices: (devices ?? []) as unknown as PoolDevice[],
   };
