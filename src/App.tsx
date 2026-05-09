@@ -14,7 +14,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { ProDashboardPage } from "./pages/ProDashboardPage";
 import { SchedulesPage } from "./pages/SchedulesPage";
 import { SettingsPage } from "./pages/SettingsPage";
-import { bootstrapProAccount } from "./lib/deviceApi";
+import { bootstrapProAccount, type PoolDevice } from "./lib/deviceApi";
 import { deviceId, selectDeviceId } from "./lib/supabase";
 import "./styles.css";
 
@@ -30,6 +30,7 @@ export default function App() {
   const [claimSuccess, setClaimSuccess] = useState("");
   const [proSetupBusy, setProSetupBusy] = useState(false);
   const [proSetupError, setProSetupError] = useState("");
+  const [proDevicesOverride, setProDevicesOverride] = useState<PoolDevice[] | null>(null);
   const [showProDeviceDashboard, setShowProDeviceDashboard] = useState(() => {
     try {
       return window.sessionStorage.getItem(proDeviceModeStorageKey) === "true";
@@ -44,6 +45,7 @@ export default function App() {
   const devices = useDevices(Boolean(auth.user) && !proAccount.account);
   const alerts = useAlerts(singleDeviceModeEnabled);
   const isProAccount = Boolean(proAccount.account);
+  const proDevices = proDevicesOverride ?? proAccount.account?.devices ?? [];
   const checkingDevices = Boolean(auth.user) && !isProAccount && devices.loading;
   const hasNoDevices = Boolean(auth.user) && !isProAccount && !devices.loading && devices.devices.length === 0;
 
@@ -101,6 +103,10 @@ export default function App() {
     }
   }
 
+  useEffect(() => {
+    setProDevicesOverride(null);
+  }, [proAccount.account?.organization.id]);
+
   if (!auth.configured) {
     return (
       <div className="login-screen">
@@ -137,8 +143,14 @@ export default function App() {
       <ProDashboardPage
         organization={proAccount.account.organization}
         membership={proAccount.account.membership}
-        devices={proAccount.account.devices}
+        devices={proDevices}
         onSignOut={auth.signOut}
+        onPropertyUpdated={(updatedDevice) => {
+          setProDevicesOverride((current) => {
+            const source = current ?? proAccount.account?.devices ?? [];
+            return source.map((device) => device.device_id === updatedDevice.device_id ? updatedDevice : device);
+          });
+        }}
         onOpenDevice={(nextDeviceId) => {
           selectDeviceId(nextDeviceId);
           try {
@@ -154,6 +166,7 @@ export default function App() {
 
   return (
     <PoolShell
+      variant={proAccount.account ? "desktop" : "phone"}
       activeTab={activeTab}
       onTabChange={setActiveTab}
       alertCount={alerts.activeAlertCount}

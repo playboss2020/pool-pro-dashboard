@@ -62,6 +62,21 @@ button:disabled {
   box-shadow: 0 24px 54px rgba(6, 59, 91, 0.32);
 }
 
+.desktop-dashboard-background {
+  align-items: stretch;
+  padding: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(239, 249, 253, 0.96)),
+    linear-gradient(135deg, #d9f7ff, #f7fbff 48%, #e8f5ed);
+}
+
+.desktop-dashboard-frame {
+  width: min(100%, 1280px);
+  min-height: calc(100dvh - 44px);
+  max-height: none;
+  border-radius: 26px;
+}
+
 .app-header {
   display: flex;
   align-items: center;
@@ -751,6 +766,38 @@ button:disabled {
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   padding: 0 18px 96px;
+}
+
+.desktop-dashboard-frame .app-content {
+  padding: 0 28px 110px;
+}
+
+.desktop-dashboard-frame .screen-stack {
+  max-width: 1120px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.desktop-dashboard-frame .reorder-zone {
+  display: grid;
+  grid-template-columns: minmax(380px, 1.15fr) minmax(320px, 0.85fr);
+  align-items: stretch;
+  gap: 18px;
+}
+
+.desktop-dashboard-frame .dial-card,
+.desktop-dashboard-frame .pump-section,
+.desktop-dashboard-frame .pump-card {
+  height: 100%;
+}
+
+.desktop-dashboard-frame .bottom-tabs {
+  max-width: 1120px;
+  width: calc(100% - 56px);
+  margin: 0 auto;
+  border: 1px solid rgba(194, 229, 240, 0.72);
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
 }
 
 .screen-stack {
@@ -2517,7 +2564,10 @@ button:disabled {
 .pro-nav button,
 .pro-toolbar button,
 .pro-device-footer button,
-.pro-account-card button {
+.pro-device-actions button,
+.pro-account-card button,
+.pro-modal-actions button,
+.pro-modal-close {
   border: 0;
   font-weight: 850;
 }
@@ -2702,7 +2752,8 @@ button:disabled {
   align-items: flex-start;
 }
 
-.pro-device-footer {
+.pro-device-footer,
+.pro-device-actions {
   align-items: center;
 }
 
@@ -2775,12 +2826,27 @@ button:disabled {
   font-size: 17px;
 }
 
-.pro-device-footer button {
+.pro-device-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.pro-device-actions button,
+.pro-modal-actions button {
   min-height: 40px;
   padding: 0 14px;
   border-radius: 12px;
   color: #ffffff;
   background: linear-gradient(160deg, #0c8abf, #096b9f);
+}
+
+.pro-device-actions button.secondary,
+.pro-modal-actions button.secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #0b6f9d;
+  background: #e8f7ff;
 }
 
 .pro-empty-state {
@@ -2835,6 +2901,93 @@ button:disabled {
   color: #ffffff;
   background: linear-gradient(160deg, #0c8abf, #096b9f);
   font-weight: 900;
+}
+
+.pro-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(7, 35, 56, 0.42);
+  backdrop-filter: blur(8px);
+}
+
+.pro-property-modal {
+  width: min(100%, 620px);
+  max-height: calc(100dvh - 48px);
+  overflow: auto;
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 28px 70px rgba(5, 31, 79, 0.28);
+}
+
+.pro-modal-header,
+.pro-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.pro-modal-header h2 {
+  margin: 0;
+  color: #12314b;
+  font-size: 24px;
+}
+
+.pro-modal-close {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #0b6f9d;
+  background: #e8f7ff;
+}
+
+.pro-property-modal label {
+  display: grid;
+  gap: 6px;
+  color: #57778f;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.pro-property-modal input,
+.pro-property-modal textarea {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #d6e9f2;
+  border-radius: 12px;
+  outline: 0;
+  padding: 0 12px;
+  color: #12314b;
+  background: #f8fcff;
+  font: inherit;
+  font-weight: 750;
+  text-transform: none;
+}
+
+.pro-property-modal textarea {
+  min-height: 96px;
+  padding: 12px;
+  resize: vertical;
+}
+
+.pro-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 110px 120px;
+  gap: 12px;
+}
+
+.pro-modal-actions {
+  justify-content: flex-end;
 }
 
 @media (max-width: 430px) {
@@ -2909,6 +3062,13 @@ button:disabled {
 
 .reorder-card.wiggling.dragging {
   animation: none;
+}
+
+.desktop-dashboard-frame .reorder-zone {
+  display: grid;
+  grid-template-columns: minmax(380px, 1.15fr) minmax(320px, 0.85fr);
+  align-items: stretch;
+  gap: 18px;
 }
 
 .reorder-banner {

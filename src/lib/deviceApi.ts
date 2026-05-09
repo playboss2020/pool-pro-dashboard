@@ -131,6 +131,16 @@ export type BootstrapProAccountResponse = {
   message: string;
 };
 
+export type DevicePropertyInput = {
+  name: string;
+  property_name: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  property_notes: string;
+};
+
 const DEVICE_SELECT_COLUMNS = [
   "id",
   "user_id",
@@ -399,6 +409,30 @@ export async function updateDeviceName(name: string) {
     .update({ name: cleanName })
     .eq("device_id", deviceId)
     .select("*")
+    .single<PoolDevice>();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateDeviceProperty(targetDeviceId: string, input: DevicePropertyInput) {
+  const client = requireSupabase();
+  const cleanName = input.name.trim() || input.property_name.trim() || "Pool Hub";
+  const cleanPropertyName = input.property_name.trim() || cleanName;
+
+  const { data, error } = await client
+    .from("devices")
+    .update({
+      name: cleanName,
+      property_name: cleanPropertyName,
+      address: input.address.trim() || null,
+      city: input.city.trim() || null,
+      state: input.state.trim() || null,
+      zip: input.zip.trim() || null,
+      property_notes: input.property_notes.trim() || null,
+    })
+    .eq("device_id", targetDeviceId)
+    .select(PRO_DEVICE_SELECT_COLUMNS)
     .single<PoolDevice>();
 
   if (error) throw error;

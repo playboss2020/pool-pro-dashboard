@@ -1,12 +1,13 @@
-import { AlertTriangle, Building2, Flame, Gauge, MapPin, Radio, Search, Thermometer, Zap } from "lucide-react";
+import { AlertTriangle, Building2, Edit3, Flame, Gauge, MapPin, Radio, Search, Thermometer, X, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { Organization, OrganizationMember, PoolDevice } from "../lib/deviceApi";
+import { updateDeviceProperty, type DevicePropertyInput, type Organization, type OrganizationMember, type PoolDevice } from "../lib/deviceApi";
 
 type ProDashboardPageProps = {
   organization: Organization;
   membership: OrganizationMember;
   devices: PoolDevice[];
   onOpenDevice: (deviceId: string) => void;
+  onPropertyUpdated: (device: PoolDevice) => void;
   onSignOut: () => void;
 };
 
@@ -39,9 +40,32 @@ function estimatedMonthlyCost(device: PoolDevice) {
   return device.total_kwh * rate;
 }
 
-export function ProDashboardPage({ organization, membership, devices, onOpenDevice, onSignOut }: ProDashboardPageProps) {
+function propertyFormFromDevice(device: PoolDevice): DevicePropertyInput {
+  return {
+    name: device.name ?? "",
+    property_name: device.property_name ?? device.name ?? "",
+    address: device.address ?? "",
+    city: device.city ?? "",
+    state: device.state ?? "",
+    zip: device.zip ?? "",
+    property_notes: device.property_notes ?? "",
+  };
+}
+
+export function ProDashboardPage({
+  organization,
+  membership,
+  devices,
+  onOpenDevice,
+  onPropertyUpdated,
+  onSignOut,
+}: ProDashboardPageProps) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "alerts" | "offline" | "heating">("all");
+  const [editingDevice, setEditingDevice] = useState<PoolDevice | null>(null);
+  const [propertyForm, setPropertyForm] = useState<DevicePropertyInput | null>(null);
+  const [savingProperty, setSavingProperty] = useState(false);
+  const [propertyError, setPropertyError] = useState("");
 
   const fleetStats = useMemo(() => {
     const onlineCount = devices.filter((device) => device.online_status === "online" && wasSeenRecently(device.last_seen)).length;
@@ -77,6 +101,34 @@ export function ProDashboardPage({ organization, membership, devices, onOpenDevi
       return true;
     });
   }, [devices, filter, query]);
+
+  function openPropertyEditor(device: PoolDevice) {
+    setEditingDevice(device);
+    setPropertyForm(propertyFormFromDevice(device));
+    setPropertyError("");
+  }
+
+  function updatePropertyForm(key: keyof DevicePropertyInput, value: string) {
+    setPropertyForm((current) => current ? { ...current, [key]: value } : current);
+  }
+
+  async function saveProperty() {
+    if (!editingDevice || !propertyForm) return;
+
+    setSavingProperty(true);
+    setPropertyError("");
+
+    try {
+      const saved = await updateDeviceProperty(editingDevice.device_id, propertyForm);
+      onPropertyUpdated(saved);
+      setEditingDevice(null);
+      setPropertyForm(null);
+    } catch (err) {
+      setPropertyError(err instanceof Error ? err.message : "Unable to save property");
+    } finally {
+      setSavingProperty(false);
+    }
+  }
 
   return (
     <div className="pro-app-shell">
@@ -207,9 +259,15 @@ export function ProDashboardPage({ organization, membership, devices, onOpenDevi
 
                 <div className="pro-device-footer">
                   <span>{device.device_id}</span>
-                  <button type="button" onClick={() => onOpenDevice(device.device_id)}>
-                    Open dashboard
-                  </button>
+                  <div className="pro-device-actions">
+                    <button className="secondary" type="button" onClick={() => openPropertyEditor(device)}>
+                      <Edit3 size={15} />
+                      Edit
+                    </button>
+                    <button type="button" onClick={() => onOpenDevice(device.device_id)}>
+                      Open dashboard
+                    </button>
+                  </div>
                 </div>
               </article>
             );
@@ -223,6 +281,117 @@ export function ProDashboardPage({ organization, membership, devices, onOpenDevi
           </div>
         ) : null}
       </main>
+
+      {editingDevice && propertyForm ? (
+        <div className="pro-modal-backdrop" role="dialog" aria-modal="true" aria-label="Edit property">
+          <form
+            className="pro-property-modal"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void saveProperty();
+            }}
+          >
+            <div className="pro-modal-header">
+              <div>
+                <span className="eyebrow">Property Details</span>
+                <h2>{propertyTitle(editingDevice)}</h2>
+              </div>
+              <button
+                className="pro-modal-close"
+                type="button"
+                onClick={() => {
+                  setEditingDevice(null);
+                  setPropertyForm(null);
+                }}
+                aria-label="Close property editor"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <label>
+              Dashboard name
+              <input
+                value={propertyForm.name}
+                onChange={(event) => updatePropertyForm("name", event.target.value)}
+                placeholder="Pool Hub"
+              />
+            </label>
+
+            <label>
+              Property name
+              <input
+                value={propertyForm.property_name}
+                onChange={(event) => updatePropertyForm("property_name", event.target.value)}
+                placeholder="Ocean Villa 12"
+              />
+            </label>
+
+            <label>
+              Address
+              <input
+                value={propertyForm.address}
+                onChange={(event) => updatePropertyForm("address", event.target.value)}
+                placeholder="123 Beach Ave"
+              />
+            </label>
+
+            <div className="pro-form-grid">
+              <label>
+                City
+                <input
+                  value={propertyForm.city}
+                  onChange={(event) => updatePropertyForm("city", event.target.value)}
+                  placeholder="Miami"
+                />
+              </label>
+              <label>
+                State
+                <input
+                  value={propertyForm.state}
+                  onChange={(event) => updatePropertyForm("state", event.target.value)}
+                  placeholder="FL"
+                />
+              </label>
+              <label>
+                ZIP
+                <input
+                  value={propertyForm.zip}
+                  onChange={(event) => updatePropertyForm("zip", event.target.value)}
+                  placeholder="33139"
+                />
+              </label>
+            </div>
+
+            <label>
+              Notes
+              <textarea
+                value={propertyForm.property_notes}
+                onChange={(event) => updatePropertyForm("property_notes", event.target.value)}
+                placeholder="Gate code, service notes, equipment location"
+              />
+            </label>
+
+            {propertyError ? <div className="error-box">{propertyError}</div> : null}
+
+            <div className="pro-modal-actions">
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => {
+                  setEditingDevice(null);
+                  setPropertyForm(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button type="submit" disabled={savingProperty}>
+                {savingProperty ? "Saving..." : "Save property"}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -11,6 +11,7 @@ type PoolShellProps = {
   children: ReactNode;
   alertCount?: number;
   onHubSwitcherOpen?: () => void;
+  variant?: "phone" | "desktop";
 };
 
 const tabs = [
@@ -20,11 +21,18 @@ const tabs = [
   { id: "settings" as const, label: "Settings", icon: Settings },
 ];
 
-export function PoolShell({ activeTab, onTabChange, children, alertCount = 0, onHubSwitcherOpen }: PoolShellProps) {
+export function PoolShell({
+  activeTab,
+  onTabChange,
+  children,
+  alertCount = 0,
+  onHubSwitcherOpen,
+  variant = "phone",
+}: PoolShellProps) {
   const cleanLogoSrc = useTransparentImage(workflowLogo);
   return (
-    <div className="app-background">
-      <div className="phone-frame">
+    <div className={variant === "desktop" ? "app-background desktop-dashboard-background" : "app-background"}>
+      <div className={variant === "desktop" ? "phone-frame desktop-dashboard-frame" : "phone-frame"}>
         <header className="app-header">
           <div className="header-left-actions">
             <button
