@@ -108,10 +108,10 @@ The Pro app uses these tables:
 - `devices.organization_id`
 - device property fields: `property_name`, `address`, `city`, `state`, `zip`, `property_notes`
 
-Create the Pro login normally in Supabase Auth or from the app:
+Create the Pro login normally in Supabase Auth or from the app. Use a real email address you control:
 
 ```text
-Email: pro@workflowpool.test
+Email: YOUR_REAL_PRO_EMAIL
 Password: WorkflowPro123!
 ```
 

@@ -16,10 +16,10 @@ Use your Supabase anon key in `.env.local`. The app writes commands to `device_c
 
 ## Pro Test Login
 
-Create this account normally in Supabase Auth or from the app:
+Create this account normally in Supabase Auth or from the app. Use a real email address you control:
 
 ```text
-Email: pro@workflowpool.test
+Email: YOUR_REAL_PRO_EMAIL
 Password: WorkflowPro123!
 ```
 

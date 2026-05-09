@@ -209,7 +209,7 @@ with check (
 -- Test setup:
 -- 1. Create the Pro login normally in the app/Auth UI.
 --    Suggested test login:
---      Email: pro@workflowpool.test
+--      Email: use a real email address you control
 --      Password: WorkflowPro123!
 -- 2. Find that auth user's UUID in Supabase Auth.
 -- 3. Run this, replacing YOUR_PRO_USER_UUID:
