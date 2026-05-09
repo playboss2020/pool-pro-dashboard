@@ -2540,12 +2540,18 @@ button:disabled {
 }
 
 .pro-brand span,
-.pro-account-card span {
+.pro-account-card span,
+.pro-account-card small {
   display: block;
   color: #6a879c;
   font-size: 12px;
   font-weight: 800;
   text-transform: capitalize;
+}
+
+.pro-account-card small {
+  line-height: 1.35;
+  text-transform: none;
 }
 
 .pro-brand strong,
@@ -2864,6 +2870,116 @@ button:disabled {
   font-size: 18px;
 }
 
+.pro-list-panel,
+.pro-settings-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.pro-alert-row,
+.pro-energy-row,
+.pro-settings-panel {
+  border: 1px solid rgba(95, 152, 184, 0.16);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 12px 30px rgba(36, 105, 142, 0.1);
+}
+
+.pro-alert-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+}
+
+.pro-alert-row.critical {
+  border-color: rgba(222, 79, 47, 0.34);
+}
+
+.pro-alert-row.warning {
+  border-color: rgba(230, 154, 16, 0.34);
+}
+
+.pro-alert-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #d45b2b;
+  background: rgba(255, 116, 72, 0.14);
+}
+
+.pro-alert-row strong,
+.pro-energy-row strong,
+.pro-settings-heading h2 {
+  color: #12314b;
+}
+
+.pro-alert-row span,
+.pro-energy-row span,
+.pro-settings-heading p {
+  color: #6b879b;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.pro-alert-row button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 12px;
+  color: #0b6f9d;
+  background: #e8f7ff;
+  font-weight: 900;
+}
+
+.pro-energy-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) repeat(4, minmax(90px, 0.7fr));
+  gap: 12px;
+  align-items: center;
+  padding: 16px;
+}
+
+.pro-energy-row > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pro-settings-panel {
+  max-width: 880px;
+  padding: 22px;
+}
+
+.pro-settings-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.pro-settings-heading h2 {
+  margin: 0;
+  font-size: 25px;
+}
+
+.pro-settings-heading p {
+  margin: 6px 0 0;
+}
+
+.pro-settings-heading button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 14px;
+  padding: 0 16px;
+  color: #ffffff;
+  background: linear-gradient(160deg, #0c8abf, #096b9f);
+  font-weight: 900;
+  white-space: nowrap;
+}
+
 .pro-self-setup-card {
   display: grid;
   gap: 10px;
@@ -2950,7 +3066,8 @@ button:disabled {
   background: #e8f7ff;
 }
 
-.pro-property-modal label {
+.pro-property-modal label,
+.pro-settings-panel label {
   display: grid;
   gap: 6px;
   color: #57778f;
@@ -2960,7 +3077,9 @@ button:disabled {
 }
 
 .pro-property-modal input,
-.pro-property-modal textarea {
+.pro-property-modal textarea,
+.pro-settings-panel input,
+.pro-settings-panel textarea {
   width: 100%;
   min-height: 44px;
   border: 1px solid #d6e9f2;
@@ -2974,7 +3093,8 @@ button:disabled {
   text-transform: none;
 }
 
-.pro-property-modal textarea {
+.pro-property-modal textarea,
+.pro-settings-panel textarea {
   min-height: 96px;
   padding: 12px;
   resize: vertical;
@@ -2984,6 +3104,10 @@ button:disabled {
   display: grid;
   grid-template-columns: 1fr 110px 120px;
   gap: 12px;
+}
+
+.pro-form-grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .pro-modal-actions {

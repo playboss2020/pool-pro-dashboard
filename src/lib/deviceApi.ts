@@ -110,6 +110,13 @@ export type Organization = {
   id: string;
   name: string;
   plan: "pro" | "enterprise" | string;
+  company_address?: string | null;
+  company_city?: string | null;
+  company_state?: string | null;
+  company_zip?: string | null;
+  company_phone?: string | null;
+  company_email?: string | null;
+  company_notes?: string | null;
   created_at: string;
 };
 
@@ -139,6 +146,17 @@ export type DevicePropertyInput = {
   state: string;
   zip: string;
   property_notes: string;
+};
+
+export type OrganizationProfileInput = {
+  name: string;
+  company_address: string;
+  company_city: string;
+  company_state: string;
+  company_zip: string;
+  company_phone: string;
+  company_email: string;
+  company_notes: string;
 };
 
 const DEVICE_SELECT_COLUMNS = [
@@ -179,6 +197,20 @@ const PRO_DEVICE_SELECT_COLUMNS = [
   "state",
   "zip",
   "property_notes",
+].join(",");
+
+const ORGANIZATION_SELECT_COLUMNS = [
+  "id",
+  "name",
+  "plan",
+  "company_address",
+  "company_city",
+  "company_state",
+  "company_zip",
+  "company_phone",
+  "company_email",
+  "company_notes",
+  "created_at",
 ].join(",");
 
 export async function fetchDevice() {
@@ -230,7 +262,7 @@ export async function fetchProAccount(userId: string): Promise<ProAccount | null
 
   const { data: organization, error: organizationError } = await client
     .from("organizations")
-    .select("id,name,plan,created_at")
+    .select(ORGANIZATION_SELECT_COLUMNS)
     .eq("id", membership.organization_id)
     .single<Organization>();
 
@@ -434,6 +466,30 @@ export async function updateDeviceProperty(targetDeviceId: string, input: Device
     .eq("device_id", targetDeviceId)
     .select(PRO_DEVICE_SELECT_COLUMNS)
     .single<PoolDevice>();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateOrganizationProfile(organizationId: string, input: OrganizationProfileInput) {
+  const client = requireSupabase();
+  const cleanName = input.name.trim() || "Workflow Pro Account";
+
+  const { data, error } = await client
+    .from("organizations")
+    .update({
+      name: cleanName,
+      company_address: input.company_address.trim() || null,
+      company_city: input.company_city.trim() || null,
+      company_state: input.company_state.trim() || null,
+      company_zip: input.company_zip.trim() || null,
+      company_phone: input.company_phone.trim() || null,
+      company_email: input.company_email.trim() || null,
+      company_notes: input.company_notes.trim() || null,
+    })
+    .eq("id", organizationId)
+    .select(ORGANIZATION_SELECT_COLUMNS)
+    .single<Organization>();
 
   if (error) throw error;
   return data;
