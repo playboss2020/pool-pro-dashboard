@@ -14,18 +14,22 @@ import { LoginPage } from "./pages/LoginPage";
 import { ProDashboardPage } from "./pages/ProDashboardPage";
 import { SchedulesPage } from "./pages/SchedulesPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { bootstrapProAccount } from "./lib/deviceApi";
 import { deviceId, selectDeviceId } from "./lib/supabase";
 import "./styles.css";
 
 type Tab = "dashboard" | "schedules" | "analytics" | "alerts" | "settings";
 const claimSuccessStorageKey = "pool-dashboard-claim-success";
 const proDeviceModeStorageKey = "pool-pro-open-device-dashboard";
+const proSelfSetupEnabled = import.meta.env.VITE_ENABLE_PRO_SELF_SETUP === "true";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [showHubSwitcher, setShowHubSwitcher] = useState(false);
   const [showAddDevice, setShowAddDevice] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState("");
+  const [proSetupBusy, setProSetupBusy] = useState(false);
+  const [proSetupError, setProSetupError] = useState("");
   const [showProDeviceDashboard, setShowProDeviceDashboard] = useState(() => {
     try {
       return window.sessionStorage.getItem(proDeviceModeStorageKey) === "true";
@@ -80,6 +84,21 @@ export default function App() {
       // ignore
     }
     window.setTimeout(() => window.location.reload(), 650);
+  }
+
+  async function handleEnableProForCurrentAccount() {
+    setProSetupBusy(true);
+    setProSetupError("");
+
+    try {
+      await bootstrapProAccount();
+      await proAccount.refresh();
+      setShowProDeviceDashboard(false);
+    } catch (err) {
+      setProSetupError(err instanceof Error ? err.message : "Unable to enable Pro dashboard");
+    } finally {
+      setProSetupBusy(false);
+    }
   }
 
   if (!auth.configured) {
@@ -152,6 +171,18 @@ export default function App() {
       }}
     >
       {proAccount.error ? <div className="error-box">{proAccount.error}</div> : null}
+      {proSelfSetupEnabled && !proAccount.account ? (
+        <div className="pro-self-setup-card">
+          <div>
+            <strong>Enable Pro dashboard</strong>
+            <span>Use this same login as your Pro fleet account.</span>
+          </div>
+          <button type="button" onClick={() => void handleEnableProForCurrentAccount()} disabled={proSetupBusy}>
+            {proSetupBusy ? "Enabling..." : "Make this account Pro"}
+          </button>
+          {proSetupError ? <small>{proSetupError}</small> : null}
+        </div>
+      ) : null}
       {claimSuccess ? <div className="success-box app-success-banner">{claimSuccess}</div> : null}
       {activeTab === "dashboard" && checkingDevices ? <div className="loading-box">Checking your hubs...</div> : null}
       {activeTab === "dashboard" && !checkingDevices && hasNoDevices ? (

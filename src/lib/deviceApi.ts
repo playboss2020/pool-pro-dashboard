@@ -125,6 +125,12 @@ export type ProAccount = {
   devices: PoolDevice[];
 };
 
+export type BootstrapProAccountResponse = {
+  organization_id: string;
+  linked_devices: number;
+  message: string;
+};
+
 const DEVICE_SELECT_COLUMNS = [
   "id",
   "user_id",
@@ -232,6 +238,20 @@ export async function fetchProAccount(userId: string): Promise<ProAccount | null
     membership,
     devices: (devices ?? []) as unknown as PoolDevice[],
   };
+}
+
+export async function bootstrapProAccount() {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke<BootstrapProAccountResponse>("bootstrap-pro-account", {
+    body: {
+      org_name: "Workflow Pro Account",
+      property_name: "Main Pool",
+    },
+  });
+
+  if (error) throw error;
+  if (!data?.organization_id) throw new Error("Pro account was not created");
+  return data;
 }
 
 export async function sendCommand(

@@ -2798,6 +2798,45 @@ button:disabled {
   font-size: 18px;
 }
 
+.pro-self-setup-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 20px;
+  color: #12314b;
+  background: linear-gradient(160deg, #ffffff, #e4f8ff);
+  box-shadow: 0 12px 26px rgba(20, 103, 150, 0.14);
+}
+
+.pro-self-setup-card div {
+  display: grid;
+  gap: 3px;
+}
+
+.pro-self-setup-card strong {
+  font-size: 16px;
+}
+
+.pro-self-setup-card span,
+.pro-self-setup-card small {
+  color: #6a879c;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.pro-self-setup-card small {
+  color: #b64a27;
+}
+
+.pro-self-setup-card button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 14px;
+  color: #ffffff;
+  background: linear-gradient(160deg, #0c8abf, #096b9f);
+  font-weight: 900;
+}
+
 @media (max-width: 430px) {
   .app-background {
     padding: 0;
