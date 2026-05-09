@@ -40,6 +40,21 @@ function estimatedMonthlyCost(device: PoolDevice) {
   return device.total_kwh * rate;
 }
 
+function formatHeatEta(device: PoolDevice) {
+  if (!device.heater_enabled) return null;
+  if (typeof device.current_temp !== "number" || typeof device.setpoint !== "number") return "--";
+
+  const difference = Math.max(0, device.setpoint - device.current_temp);
+  if (difference <= 0) return "Holding";
+
+  const totalMinutes = Math.round(difference * 18);
+  if (totalMinutes < 60) return `~${totalMinutes}m`;
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes === 0 ? `~${hours}h` : `~${hours}h ${minutes}m`;
+}
+
 function propertyFormFromDevice(device: PoolDevice): DevicePropertyInput {
   return {
     name: device.name ?? "",
@@ -218,6 +233,7 @@ export function ProDashboardPage({
           {filteredDevices.map((device) => {
             const online = device.online_status === "online" && wasSeenRecently(device.last_seen);
             const attention = !online || device.node_online === false;
+            const heatEta = formatHeatEta(device);
             return (
               <article className={attention ? "pro-device-card attention" : "pro-device-card"} key={device.device_id}>
                 <div className="pro-device-topline">
@@ -251,9 +267,9 @@ export function ProDashboardPage({
                     <strong>{device.heater_enabled ? "On" : "Off"}</strong>
                   </div>
                   <div>
-                    <Zap size={17} />
-                    <span>Cost</span>
-                    <strong>{formatMoney(estimatedMonthlyCost(device))}</strong>
+                    {heatEta ? <Flame size={17} /> : <Zap size={17} />}
+                    <span>{heatEta ? "Heat ETA" : "Cost"}</span>
+                    <strong>{heatEta ?? formatMoney(estimatedMonthlyCost(device))}</strong>
                   </div>
                 </div>
 
