@@ -256,6 +256,22 @@ export function WorkflowAdminPage({
   const [downloadHistoryLoading, setDownloadHistoryLoading] = useState(false);
   const [downloadHistoryError, setDownloadHistoryError] = useState("");
   const [downloadBusyId, setDownloadBusyId] = useState("");
+  const [downloadSearchQuery, setDownloadSearchQuery] = useState("");
+
+  const filteredDownloadHistory = useMemo(() => {
+    const q = downloadSearchQuery.trim().toLowerCase();
+    if (!q) return downloadHistory;
+    return downloadHistory.filter((d) => {
+      const haystack = [
+        d.serial_number ?? "",
+        d.device_id,
+        d.target,
+        d.template_version ?? "",
+        d.file_name ?? "",
+      ].join(" ").toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [downloadHistory, downloadSearchQuery]);
 
   async function loadDownloadHistory() {
     setDownloadHistoryLoading(true);
@@ -551,12 +567,50 @@ export function WorkflowAdminPage({
       });
 
       setRegisteredDevice(result);
+
+      // Auto-generate and archive both hub and node firmware to the downloads
+      // log so the admin can pick them up from the searchable list below.
+      const hubCode = generateHubFirmware(result, latestHubTemplate?.code);
+      const hubFileName = hubFirmwareFileName(result);
+      try {
+        await recordWorkflowFirmwareDownload({
+          device_id: result.firmware.device_id,
+          serial_number: result.firmware.serial_number,
+          target: "hub",
+          template_version: latestHubTemplate?.version ?? "bundled fallback",
+          code: hubCode,
+          file_name: hubFileName,
+        });
+      } catch (err) {
+        console.warn("Hub firmware archive failed", err);
+      }
+
+      if (latestNodeTemplate?.code) {
+        const nodeCode = generateNodeFirmware(result, latestNodeTemplate.code);
+        const nodeFileName = nodeFirmwareFileName(result);
+        try {
+          await recordWorkflowFirmwareDownload({
+            device_id: result.firmware.device_id,
+            serial_number: result.firmware.serial_number,
+            target: "node",
+            template_version: latestNodeTemplate.version,
+            code: nodeCode,
+            file_name: nodeFileName,
+          });
+        } catch (err) {
+          console.warn("Node firmware archive failed", err);
+        }
+      }
+
+      await loadDownloadHistory();
+      setDownloadSearchQuery(result.firmware.serial_number);
       await onRefresh();
-      // Scroll the firmware values panel into view so download buttons are obvious
+
+      // Jump to the Downloads section
       window.requestAnimationFrame(() => {
-        document.getElementById("workflow-firmware-values")?.scrollIntoView({
+        document.getElementById("workflow-download-history")?.scrollIntoView({
           behavior: "smooth",
-          block: "center",
+          block: "start",
         });
       });
     } catch (err) {
@@ -1288,34 +1342,12 @@ export function WorkflowAdminPage({
                 <div className="workflow-firmware-success-header">
                   <CheckCircle2 size={20} />
                   <div>
-                    <strong>Device registered — download firmware now</strong>
+                    <strong>Registered — firmware ready below</strong>
                     <small>Serial <b>{registeredDevice.firmware.serial_number}</b> · Device ID <b>{registeredDevice.firmware.device_id}</b></small>
                   </div>
                 </div>
-                <div className="workflow-firmware-download-row">
-                  <button type="button" className="workflow-primary-download" onClick={() => void downloadRegisteredHubCode()}>
-                    <Download size={16} />
-                    Download Hub firmware
-                  </button>
-                  <button
-                    type="button"
-                    className="workflow-primary-download"
-                    disabled={!latestNodeTemplate?.code}
-                    onClick={() => void downloadRegisteredNodeCode()}
-                  >
-                    <Download size={16} />
-                    Download Node firmware
-                  </button>
-                  <button type="button" className="workflow-secondary-download" onClick={() => void copyRegisteredFirmware()}>
-                    <Copy size={14} />
-                    Copy values
-                  </button>
-                </div>
-                <pre>{firmwareSnippet(registeredDevice)}</pre>
                 <small>
-                  Hub uses {latestHubTemplate ? `saved template ${latestHubTemplate.version}` : "bundled fallback template"}.
-                  Node uses {latestNodeTemplate ? `saved template ${latestNodeTemplate.version}` : "the node template after you save it in Firmware"}.
-                  Both files are also saved to the audit log below.
+                  Both Hub and Node firmware have been generated and archived. Scroll to <b>Firmware downloads</b> below and click any row to download.
                 </small>
               </div>
             ) : null}
@@ -1346,6 +1378,29 @@ export function WorkflowAdminPage({
                 </button>
               </div>
 
+              <div className="workflow-download-search">
+                <input
+                  type="text"
+                  placeholder="Search by serial, device ID, target, version, or file name…"
+                  value={downloadSearchQuery}
+                  onChange={(e) => setDownloadSearchQuery(e.target.value)}
+                />
+                {downloadSearchQuery ? (
+                  <button
+                    type="button"
+                    className="workflow-icon-button"
+                    onClick={() => setDownloadSearchQuery("")}
+                    aria-label="Clear search"
+                    title="Clear"
+                  >
+                    ×
+                  </button>
+                ) : null}
+                <span className="workflow-download-search-count">
+                  {filteredDownloadHistory.length} of {downloadHistory.length}
+                </span>
+              </div>
+
               {downloadHistoryError ? (
                 <div className="workflow-admin-message error">{downloadHistoryError}</div>
               ) : null}
@@ -1354,47 +1409,46 @@ export function WorkflowAdminPage({
                 <p className="workflow-empty">Loading downloads…</p>
               ) : downloadHistory.length === 0 ? (
                 <p className="workflow-empty">
-                  No firmware downloads yet. Once you register a device and click Download, the audit log shows here.
+                  No firmware downloads yet. Register a device above to get started.
                 </p>
+              ) : filteredDownloadHistory.length === 0 ? (
+                <p className="workflow-empty">No downloads match your search.</p>
               ) : (
-                <table className="workflow-revenue-table">
-                  <thead>
-                    <tr>
-                      <th>Serial</th>
-                      <th>Device ID</th>
-                      <th>Target</th>
-                      <th>Version</th>
-                      <th>Downloaded</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {downloadHistory.map((d) => (
-                      <tr key={d.id}>
-                        <td><strong>{d.serial_number ?? "—"}</strong></td>
-                        <td>{d.device_id}</td>
-                        <td>
+                <div className="workflow-download-list">
+                  {filteredDownloadHistory.map((d) => (
+                    <article
+                      key={d.id}
+                      className={`workflow-download-card${downloadBusyId === d.id ? " busy" : ""}`}
+                      onClick={() => void reDownloadFirmware(d)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          void reDownloadFirmware(d);
+                        }
+                      }}
+                    >
+                      <div className="workflow-download-card-main">
+                        <div className="workflow-download-card-top">
                           <span className={`workflow-target-tag ${d.target}`}>
                             {d.target === "hub" ? "Hub" : "Node"}
                           </span>
-                        </td>
-                        <td>{d.template_version ?? "—"}</td>
-                        <td>{formatShortDateTime(d.downloaded_at)}</td>
-                        <td>
-                          <button
-                            type="button"
-                            className="workflow-icon-button"
-                            disabled={downloadBusyId === d.id}
-                            onClick={() => void reDownloadFirmware(d)}
-                            title="Re-download this exact .ino file"
-                          >
-                            {downloadBusyId === d.id ? "…" : <Download size={14} />}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          <strong>{d.serial_number ?? "—"}</strong>
+                          <span className="workflow-download-when">{formatShortDateTime(d.downloaded_at)}</span>
+                        </div>
+                        <div className="workflow-download-card-meta">
+                          <span>Device ID: <b>{d.device_id}</b></span>
+                          <span>Version: <b>{d.template_version ?? "—"}</b></span>
+                          {d.file_name ? <span>File: <b>{d.file_name}</b></span> : null}
+                        </div>
+                      </div>
+                      <div className="workflow-download-card-action">
+                        {downloadBusyId === d.id ? <span>…</span> : <Download size={18} />}
+                      </div>
+                    </article>
+                  ))}
+                </div>
               )}
             </section>
           ) : null}

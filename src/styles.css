@@ -4880,6 +4880,106 @@ button:disabled {
 
 .workflow-download-history { margin-top: 16px; }
 
+.workflow-download-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.workflow-download-search input {
+  flex: 1;
+  min-height: 42px;
+  border: 1px solid rgba(15, 60, 90, 0.16);
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #102a3b;
+  background: white;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.workflow-download-search input:focus {
+  outline: 0;
+  border-color: rgba(11, 131, 185, 0.45);
+  box-shadow: 0 0 0 3px rgba(11, 131, 185, 0.12);
+}
+.workflow-download-search-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7d8a;
+  white-space: nowrap;
+}
+
+.workflow-download-list {
+  display: grid;
+  gap: 10px;
+}
+.workflow-download-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 18px;
+  border: 1px solid rgba(15, 60, 90, 0.12);
+  border-radius: 14px;
+  background: white;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s, background 0.12s;
+}
+.workflow-download-card:hover, .workflow-download-card:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(11, 131, 185, 0.35);
+  background: linear-gradient(135deg, #f7fbff, white);
+  box-shadow: 0 10px 24px rgba(11, 131, 185, 0.12);
+  outline: 0;
+}
+.workflow-download-card.busy { opacity: 0.55; cursor: progress; }
+.workflow-download-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.workflow-download-card-top strong {
+  font-size: 15px;
+  font-weight: 900;
+  color: #102a3b;
+  font-family: ui-monospace, monospace;
+}
+.workflow-download-when {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7d8a;
+  margin-left: auto;
+}
+.workflow-download-card-meta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #6b7d8a;
+  font-weight: 500;
+}
+.workflow-download-card-meta b {
+  color: #102a3b;
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
+}
+.workflow-download-card-action {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #eef8ff;
+  color: #0b83b9;
+}
+.workflow-download-card:hover .workflow-download-card-action {
+  background: #0b83b9;
+  color: white;
+}
+
 .workflow-firmware-success {
   border: 2px solid #22c55e !important;
   background: linear-gradient(160deg, #f0fdf4, #ffffff) !important;
