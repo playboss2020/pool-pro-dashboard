@@ -47,6 +47,7 @@ import {
 } from "../lib/firmwareDownload";
 import type { PoolDevice } from "../lib/deviceApi";
 import { DashboardPage } from "./DashboardPage";
+import { DemoProDashboardPage } from "./DemoDashboardPage";
 
 type WorkflowAdminPageProps = {
   overview: WorkflowAdminOverview;
@@ -62,14 +63,15 @@ type WorkflowAdminPageProps = {
 
 type AdminSection =
   | "overview"
-  | "testDashboard"
-  | "registerDevice"
   | "createProAccount"
-  | "assignDevice"
   | "proCompanies"
+  | "assignDevice"
+  | "registerDevice"
   | "devices"
   | "claims"
-  | "firmware";
+  | "firmware"
+  | "testDashboard"
+  | "testProDashboard";
 
 function wasSeenRecently(lastSeen: string | null | undefined) {
   if (!lastSeen) return false;
@@ -187,6 +189,7 @@ function workflowHeaderTitle(section: AdminSection) {
   if (section === "devices") return "Check recently registered hub status.";
   if (section === "claims") return "Review device claim records for customer onboarding.";
   if (section === "testDashboard") return "Live test of the homeowner dashboard with your real devices.";
+  if (section === "testProDashboard") return "Live test of the full Pro dashboard experience.";
   return "Manage Pro accounts, devices, and onboarding.";
 }
 
@@ -592,22 +595,8 @@ export function WorkflowAdminPage({
             <Building2 size={17} />
             Overview
           </button>
-          <button
-            type="button"
-            className={activeSection === "testDashboard" ? "active" : ""}
-            onClick={() => showWorkflowSection("testDashboard")}
-          >
-            <Wifi size={17} />
-            Test Dashboard
-          </button>
-          <button
-            type="button"
-            className={activeSection === "registerDevice" ? "active" : ""}
-            onClick={() => showWorkflowSection("registerDevice")}
-          >
-            <KeyRound size={17} />
-            Register Device
-          </button>
+
+          <span className="workflow-admin-nav-group">Pro Accounts</span>
           <button
             type="button"
             className={activeSection === "createProAccount" ? "active" : ""}
@@ -618,19 +607,29 @@ export function WorkflowAdminPage({
           </button>
           <button
             type="button"
+            className={activeSection === "proCompanies" ? "active" : ""}
+            onClick={() => showWorkflowSection("proCompanies")}
+          >
+            <UserRoundPlus size={17} />
+            Pro Companies
+          </button>
+          <button
+            type="button"
             className={activeSection === "assignDevice" ? "active" : ""}
             onClick={() => showWorkflowSection("assignDevice")}
           >
             <Link2 size={17} />
             Assign Device
           </button>
+
+          <span className="workflow-admin-nav-group">Hardware</span>
           <button
             type="button"
-            className={activeSection === "proCompanies" ? "active" : ""}
-            onClick={() => showWorkflowSection("proCompanies")}
+            className={activeSection === "registerDevice" ? "active" : ""}
+            onClick={() => showWorkflowSection("registerDevice")}
           >
-            <UserRoundPlus size={17} />
-            Pro Companies
+            <KeyRound size={17} />
+            Register Device
           </button>
           <button
             type="button"
@@ -655,6 +654,24 @@ export function WorkflowAdminPage({
           >
             <FileCode2 size={17} />
             Firmware
+          </button>
+
+          <span className="workflow-admin-nav-group">Live Testing</span>
+          <button
+            type="button"
+            className={activeSection === "testDashboard" ? "active" : ""}
+            onClick={() => showWorkflowSection("testDashboard")}
+          >
+            <Wifi size={17} />
+            Test Dashboard
+          </button>
+          <button
+            type="button"
+            className={activeSection === "testProDashboard" ? "active" : ""}
+            onClick={() => showWorkflowSection("testProDashboard")}
+          >
+            <Building2 size={17} />
+            Test Pro Dashboard
           </button>
         </nav>
 
@@ -709,7 +726,19 @@ export function WorkflowAdminPage({
           </section>
         ) : null}
 
-        {activeSection !== "firmware" && activeSection !== "testDashboard" ? (
+        {activeSection === "testProDashboard" ? (
+          <section className="workflow-section" id="workflow-test-pro-dashboard">
+            <div className="workflow-section-heading">
+              <h2>Live Pro dashboard test</h2>
+              <p>Walk through every Pro feature — fleet view, properties, schedules, members, billing. Drill into any property to open the live homeowner dashboard.</p>
+            </div>
+            <div className="workflow-test-dashboard-frame">
+              <DemoProDashboardPage />
+            </div>
+          </section>
+        ) : null}
+
+        {activeSection !== "firmware" && activeSection !== "testDashboard" && activeSection !== "testProDashboard" ? (
           <>
         {activeSection === "overview" ? (
         <>

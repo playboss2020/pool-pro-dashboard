@@ -4567,6 +4567,23 @@ button:disabled {
   color: #126a92;
 }
 
+.workflow-admin-nav-group {
+  margin: 10px 0 -2px 14px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a8b6;
+}
+
+.workflow-test-dashboard-frame {
+  margin-top: 16px;
+  border: 1px solid rgba(24, 148, 189, 0.18);
+  border-radius: 18px;
+  overflow: hidden;
+  background: #f7fbff;
+}
+
 .workflow-admin-signout {
   margin-top: auto;
   border: none;
