@@ -45,15 +45,24 @@ import {
   nodeFirmwareFileName,
   pairIdForDevice,
 } from "../lib/firmwareDownload";
+import type { PoolDevice } from "../lib/deviceApi";
+import { DashboardPage } from "./DashboardPage";
 
 type WorkflowAdminPageProps = {
   overview: WorkflowAdminOverview;
   onRefresh: () => Promise<void>;
   onSignOut: () => void;
+  testDevice?: PoolDevice | null;
+  testUserId?: string;
+  testLoading?: boolean;
+  testError?: string;
+  onTestRefresh?: () => void;
+  onTestCommandSettled?: () => void;
 };
 
 type AdminSection =
   | "overview"
+  | "testDashboard"
   | "registerDevice"
   | "createProAccount"
   | "assignDevice"
@@ -177,10 +186,21 @@ function workflowHeaderTitle(section: AdminSection) {
   if (section === "proCompanies") return "Review, suspend, reactivate, or delete Pro accounts.";
   if (section === "devices") return "Check recently registered hub status.";
   if (section === "claims") return "Review device claim records for customer onboarding.";
+  if (section === "testDashboard") return "Live test of the homeowner dashboard with your real devices.";
   return "Manage Pro accounts, devices, and onboarding.";
 }
 
-export function WorkflowAdminPage({ overview, onRefresh, onSignOut }: WorkflowAdminPageProps) {
+export function WorkflowAdminPage({
+  overview,
+  onRefresh,
+  onSignOut,
+  testDevice,
+  testUserId,
+  testLoading,
+  testError,
+  onTestRefresh,
+  onTestCommandSettled,
+}: WorkflowAdminPageProps) {
   const [activeSection, setActiveSection] = useState<AdminSection>("overview");
   const [companyName, setCompanyName] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
@@ -574,6 +594,14 @@ export function WorkflowAdminPage({ overview, onRefresh, onSignOut }: WorkflowAd
           </button>
           <button
             type="button"
+            className={activeSection === "testDashboard" ? "active" : ""}
+            onClick={() => showWorkflowSection("testDashboard")}
+          >
+            <Wifi size={17} />
+            Test Dashboard
+          </button>
+          <button
+            type="button"
             className={activeSection === "registerDevice" ? "active" : ""}
             onClick={() => showWorkflowSection("registerDevice")}
           >
@@ -656,7 +684,32 @@ export function WorkflowAdminPage({ overview, onRefresh, onSignOut }: WorkflowAd
           </button>
         </header>
 
-        {activeSection !== "firmware" ? (
+        {activeSection === "testDashboard" ? (
+          <section className="workflow-section" id="workflow-test-dashboard">
+            <div className="workflow-section-heading">
+              <h2>Live device test</h2>
+              <p>Use the real homeowner dashboard against your actual pool hub. Commands send and live data updates in real time.</p>
+            </div>
+            {testUserId ? (
+              <div className="workflow-test-dashboard-frame">
+                <DashboardPage
+                  device={testDevice ?? null}
+                  userId={testUserId}
+                  loading={Boolean(testLoading)}
+                  error={testError ?? ""}
+                  onRefresh={onTestRefresh ?? (() => {})}
+                  onCommandSettled={onTestCommandSettled ?? (() => {})}
+                />
+              </div>
+            ) : (
+              <div className="workflow-empty-state">
+                No device available. Make sure a hub is registered and online.
+              </div>
+            )}
+          </section>
+        ) : null}
+
+        {activeSection !== "firmware" && activeSection !== "testDashboard" ? (
           <>
         {activeSection === "overview" ? (
         <>

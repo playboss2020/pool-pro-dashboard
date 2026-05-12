@@ -169,6 +169,12 @@ export default function App() {
         overview={workflowAdmin.overview}
         onRefresh={workflowAdmin.refresh}
         onSignOut={auth.signOut}
+        testDevice={device}
+        testUserId={auth.user?.id}
+        testLoading={loading}
+        testError={error}
+        onTestRefresh={refresh}
+        onTestCommandSettled={refreshBurst}
       />
     );
   }
