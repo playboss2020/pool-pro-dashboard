@@ -10,7 +10,8 @@ type AdminAction =
   | "delete_organization"
   | "get_firmware_templates"
   | "save_firmware_template"
-  | "record_firmware_download";
+  | "record_firmware_download"
+  | "list_firmware_downloads";
 
 function getBearerToken(req: Request) {
   const header = req.headers.get("authorization") ?? "";
@@ -564,6 +565,8 @@ async function recordFirmwareDownload(
   const deviceId = cleanString(body.device_id);
   const serialNumber = normalizeSerial(body.serial_number);
   const templateVersion = cleanString(body.template_version);
+  const code = typeof body.code === "string" ? body.code : null;
+  const fileName = cleanString(body.file_name);
 
   if (!target || !deviceId) {
     return jsonResponse({ error: "Firmware target and device ID are required" }, 400);
@@ -577,8 +580,10 @@ async function recordFirmwareDownload(
       target,
       template_version: templateVersion || null,
       downloaded_by: adminUserId,
+      code,
+      file_name: fileName || null,
     })
-    .select("id,device_id,serial_number,target,template_version,downloaded_at")
+    .select("id,device_id,serial_number,target,template_version,downloaded_at,file_name")
     .single();
 
   if (error) throw error;
@@ -587,6 +592,38 @@ async function recordFirmwareDownload(
     download,
     message: `${target === "hub" ? "Hub" : "Node"} firmware download recorded`,
   });
+}
+
+async function listFirmwareDownloads(
+  supabase: ReturnType<typeof serviceClient>,
+  body: Record<string, unknown>,
+) {
+  const includeCode = body.include_code === true;
+  const requestedId = typeof body.id === "string" ? body.id.trim() : "";
+
+  if (requestedId) {
+    const { data: row, error } = await supabase
+      .from("workflow_firmware_downloads")
+      .select("id,device_id,serial_number,target,template_version,downloaded_at,file_name,code")
+      .eq("id", requestedId)
+      .maybeSingle();
+    if (error) throw error;
+    return jsonResponse({ download: row });
+  }
+
+  const columns = includeCode
+    ? "id,device_id,serial_number,target,template_version,downloaded_at,file_name,code"
+    : "id,device_id,serial_number,target,template_version,downloaded_at,file_name";
+
+  const { data, error } = await supabase
+    .from("workflow_firmware_downloads")
+    .select(columns)
+    .order("downloaded_at", { ascending: false })
+    .limit(200);
+
+  if (error) throw error;
+
+  return jsonResponse({ downloads: data ?? [] });
 }
 
 Deno.serve(async (req) => {
@@ -607,6 +644,7 @@ Deno.serve(async (req) => {
       "get_firmware_templates",
       "save_firmware_template",
       "record_firmware_download",
+      "list_firmware_downloads",
     ].includes(action)) {
       return jsonResponse({ error: "Invalid admin action" }, 400);
     }
@@ -622,6 +660,7 @@ Deno.serve(async (req) => {
     if (action === "get_firmware_templates") return await getFirmwareTemplates(admin.supabase);
     if (action === "save_firmware_template") return await saveFirmwareTemplate(admin.supabase, admin.user.id, body);
     if (action === "record_firmware_download") return await recordFirmwareDownload(admin.supabase, admin.user.id, body);
+    if (action === "list_firmware_downloads") return await listFirmwareDownloads(admin.supabase, body);
 
     return jsonResponse(await loadOverview(admin.supabase, admin.user.email ?? ""));
   } catch (error) {

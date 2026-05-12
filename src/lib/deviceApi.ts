@@ -335,17 +335,23 @@ export type WorkflowFirmwareDownloadInput = {
   serial_number: string | null;
   target: FirmwareTarget;
   template_version: string;
+  code?: string;
+  file_name?: string;
+};
+
+export type WorkflowFirmwareDownloadRecord = {
+  id: string;
+  device_id: string;
+  serial_number: string | null;
+  target: FirmwareTarget;
+  template_version: string | null;
+  downloaded_at: string;
+  file_name: string | null;
+  code?: string | null;
 };
 
 export type WorkflowFirmwareDownloadResponse = {
-  download: {
-    id: string;
-    device_id: string;
-    serial_number: string | null;
-    target: FirmwareTarget;
-    template_version: string | null;
-    downloaded_at: string;
-  };
+  download: WorkflowFirmwareDownloadRecord;
   message: string;
 };
 
@@ -709,6 +715,25 @@ export async function recordWorkflowFirmwareDownload(input: WorkflowFirmwareDown
   if (error) throw error;
   if (!data?.download?.id) throw new Error("Firmware download was not recorded");
   return data;
+}
+
+export async function fetchWorkflowFirmwareDownloads() {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke<{ downloads: WorkflowFirmwareDownloadRecord[] }>("workflow-admin", {
+    body: { action: "list_firmware_downloads" },
+  });
+  if (error) throw error;
+  return data?.downloads ?? [];
+}
+
+export async function fetchWorkflowFirmwareDownloadCode(id: string) {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke<{ download: WorkflowFirmwareDownloadRecord | null }>("workflow-admin", {
+    body: { action: "list_firmware_downloads", id, include_code: true },
+  });
+  if (error) throw error;
+  if (!data?.download) throw new Error("Download not found");
+  return data.download;
 }
 
 export async function sendCommand(

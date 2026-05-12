@@ -29,6 +29,9 @@ import {
   registerWorkflowDevice,
   deleteWorkflowOrganization,
   recordWorkflowFirmwareDownload,
+  fetchWorkflowFirmwareDownloads,
+  fetchWorkflowFirmwareDownloadCode,
+  type WorkflowFirmwareDownloadRecord,
   saveWorkflowFirmwareTemplate,
   updateWorkflowOrganizationStatus,
   type FirmwareTarget,
@@ -249,6 +252,36 @@ export function WorkflowAdminPage({
   const [firmwareMessage, setFirmwareMessage] = useState("");
   const [firmwareError, setFirmwareError] = useState("");
   const [testProOrgId, setTestProOrgId] = useState("");
+  const [downloadHistory, setDownloadHistory] = useState<WorkflowFirmwareDownloadRecord[]>([]);
+  const [downloadHistoryLoading, setDownloadHistoryLoading] = useState(false);
+  const [downloadHistoryError, setDownloadHistoryError] = useState("");
+  const [downloadBusyId, setDownloadBusyId] = useState("");
+
+  async function loadDownloadHistory() {
+    setDownloadHistoryLoading(true);
+    setDownloadHistoryError("");
+    try {
+      setDownloadHistory(await fetchWorkflowFirmwareDownloads());
+    } catch (err) {
+      setDownloadHistoryError(err instanceof Error ? err.message : "Unable to load downloads");
+    } finally {
+      setDownloadHistoryLoading(false);
+    }
+  }
+
+  async function reDownloadFirmware(record: WorkflowFirmwareDownloadRecord) {
+    setDownloadBusyId(record.id);
+    try {
+      const full = await fetchWorkflowFirmwareDownloadCode(record.id);
+      if (!full.code) throw new Error("This download has no archived code (it predates the audit feature).");
+      const fileName = full.file_name ?? `WorkflowPool_${full.target}_${full.device_id}.ino`;
+      downloadTextFile(fileName, full.code);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Re-download failed");
+    } finally {
+      setDownloadBusyId("");
+    }
+  }
   const [revenue, setRevenue] = useState<StripeRevenueOverview | null>(null);
   const [revenueLoading, setRevenueLoading] = useState(false);
   const [revenueError, setRevenueError] = useState("");
@@ -300,6 +333,9 @@ export function WorkflowAdminPage({
   }
 
   useEffect(() => {
+    if (activeSection === "registerDevice" && downloadHistory.length === 0 && !downloadHistoryLoading) {
+      void loadDownloadHistory();
+    }
     if (activeSection === "revenue" && !revenue && !revenueLoading) {
       void loadRevenue();
     }
@@ -534,10 +570,9 @@ export function WorkflowAdminPage({
 
   async function downloadRegisteredHubCode() {
     if (!registeredDevice) return;
-    downloadTextFile(
-      hubFirmwareFileName(registeredDevice),
-      generateHubFirmware(registeredDevice, latestHubTemplate?.code),
-    );
+    const fileName = hubFirmwareFileName(registeredDevice);
+    const code = generateHubFirmware(registeredDevice, latestHubTemplate?.code);
+    downloadTextFile(fileName, code);
 
     try {
       await recordWorkflowFirmwareDownload({
@@ -545,7 +580,10 @@ export function WorkflowAdminPage({
         serial_number: registeredDevice.firmware.serial_number,
         target: "hub",
         template_version: latestHubTemplate?.version ?? "bundled fallback",
+        code,
+        file_name: fileName,
       });
+      await loadDownloadHistory();
       await onRefresh();
     } catch (err) {
       console.warn("Hub firmware downloaded, but download audit failed", err);
@@ -555,10 +593,9 @@ export function WorkflowAdminPage({
   async function downloadRegisteredNodeCode() {
     if (!registeredDevice || !latestNodeTemplate?.code) return;
 
-    downloadTextFile(
-      nodeFirmwareFileName(registeredDevice),
-      generateNodeFirmware(registeredDevice, latestNodeTemplate.code),
-    );
+    const fileName = nodeFirmwareFileName(registeredDevice);
+    const code = generateNodeFirmware(registeredDevice, latestNodeTemplate.code);
+    downloadTextFile(fileName, code);
 
     try {
       await recordWorkflowFirmwareDownload({
@@ -566,7 +603,10 @@ export function WorkflowAdminPage({
         serial_number: registeredDevice.firmware.serial_number,
         target: "node",
         template_version: latestNodeTemplate.version,
+        code,
+        file_name: fileName,
       });
+      await loadDownloadHistory();
       await onRefresh();
     } catch (err) {
       console.warn("Node firmware downloaded, but download audit failed", err);
@@ -1273,6 +1313,77 @@ export function WorkflowAdminPage({
               {registeringDevice ? "Registering..." : "Register device"}
             </button>
           </form>
+          ) : null}
+
+          {activeSection === "registerDevice" ? (
+            <section className="workflow-admin-panel workflow-download-history" id="workflow-download-history">
+              <div className="workflow-panel-heading">
+                <div>
+                  <span>Audit log</span>
+                  <h2>Firmware downloads</h2>
+                </div>
+                <button
+                  type="button"
+                  className="workflow-icon-button"
+                  onClick={() => void loadDownloadHistory()}
+                  disabled={downloadHistoryLoading}
+                  aria-label="Refresh downloads"
+                >
+                  <RefreshCw size={16} />
+                </button>
+              </div>
+
+              {downloadHistoryError ? (
+                <div className="workflow-admin-message error">{downloadHistoryError}</div>
+              ) : null}
+
+              {downloadHistoryLoading && downloadHistory.length === 0 ? (
+                <p className="workflow-empty">Loading downloads…</p>
+              ) : downloadHistory.length === 0 ? (
+                <p className="workflow-empty">
+                  No firmware downloads yet. Once you register a device and click Download, the audit log shows here.
+                </p>
+              ) : (
+                <table className="workflow-revenue-table">
+                  <thead>
+                    <tr>
+                      <th>Serial</th>
+                      <th>Device ID</th>
+                      <th>Target</th>
+                      <th>Version</th>
+                      <th>Downloaded</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {downloadHistory.map((d) => (
+                      <tr key={d.id}>
+                        <td><strong>{d.serial_number ?? "—"}</strong></td>
+                        <td>{d.device_id}</td>
+                        <td>
+                          <span className={`workflow-target-tag ${d.target}`}>
+                            {d.target === "hub" ? "Hub" : "Node"}
+                          </span>
+                        </td>
+                        <td>{d.template_version ?? "—"}</td>
+                        <td>{formatShortDateTime(d.downloaded_at)}</td>
+                        <td>
+                          <button
+                            type="button"
+                            className="workflow-icon-button"
+                            disabled={downloadBusyId === d.id}
+                            onClick={() => void reDownloadFirmware(d)}
+                            title="Re-download this exact .ino file"
+                          >
+                            {downloadBusyId === d.id ? "…" : <Download size={14} />}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </section>
           ) : null}
 
           {activeSection === "createProAccount" ? (
