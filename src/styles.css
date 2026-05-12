@@ -3626,8 +3626,8 @@ button:disabled {
   display: grid;
   grid-template-columns: 46px minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
+  gap: 18px;
+  padding: 14px 18px;
   border-radius: 14px;
   background: linear-gradient(135deg, #ffffff, #f7fbff);
   border: 1px solid rgba(11, 131, 185, 0.1);
@@ -3639,17 +3639,31 @@ button:disabled {
   box-shadow: 0 8px 18px rgba(15, 60, 90, 0.07);
 }
 
+.pro-team-row > div:nth-of-type(2) {
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .pro-team-row strong {
   font-size: 14px;
   font-weight: 800;
   color: #102a3b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pro-team-row > div:nth-of-type(2) span {
   color: #6b879b;
   font-size: 12px;
   font-weight: 650;
-  word-break: break-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .pro-team-row b {
