@@ -1173,3 +1173,48 @@ export async function fetchStripeRevenueOverview() {
   if (!data) throw new Error("No data returned");
   return data;
 }
+
+export type SentryIssue = {
+  id: string;
+  project: string;
+  title: string;
+  culprit: string | null;
+  level: "fatal" | "error" | "warning" | "info" | "debug" | string;
+  status: string;
+  count: number;
+  user_count: number;
+  first_seen: string;
+  last_seen: string;
+  permalink: string;
+  metadata: Record<string, unknown> | null;
+};
+
+export type SentryAdminOverview = {
+  issues: SentryIssue[];
+  stats: {
+    total_issues: number;
+    total_events: number;
+    affected_users: number;
+    critical: number;
+    warnings: number;
+  };
+  projects: string[];
+};
+
+export async function fetchSentryAdminIssues() {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke<SentryAdminOverview>("sentry-admin-issues", {
+    body: { action: "list" },
+  });
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("No data returned");
+  return data;
+}
+
+export async function resolveSentryIssue(issueId: string, project: string) {
+  const client = requireSupabase();
+  const { error } = await client.functions.invoke("sentry-admin-issues", {
+    body: { action: "resolve", issue_id: issueId, project },
+  });
+  if (error) throw new Error(error.message);
+}

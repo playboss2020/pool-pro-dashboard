@@ -45,8 +45,13 @@ import {
   nodeFirmwareFileName,
   pairIdForDevice,
 } from "../lib/firmwareDownload";
-import type { OrganizationMember, PoolDevice, StripeRevenueOverview } from "../lib/deviceApi";
-import { fetchStripeRevenueOverview } from "../lib/deviceApi";
+import type {
+  OrganizationMember,
+  PoolDevice,
+  SentryAdminOverview,
+  StripeRevenueOverview,
+} from "../lib/deviceApi";
+import { fetchSentryAdminIssues, fetchStripeRevenueOverview, resolveSentryIssue } from "../lib/deviceApi";
 import { DashboardPage } from "./DashboardPage";
 import { ProDashboardPage } from "./ProDashboardPage";
 
@@ -65,6 +70,7 @@ type WorkflowAdminPageProps = {
 type AdminSection =
   | "overview"
   | "revenue"
+  | "errors"
   | "createProAccount"
   | "proCompanies"
   | "assignDevice"
@@ -193,6 +199,7 @@ function workflowHeaderTitle(section: AdminSection) {
   if (section === "testDashboard") return "Live test of the homeowner dashboard with your real devices.";
   if (section === "testProDashboard") return "Live test of the full Pro dashboard experience.";
   if (section === "revenue") return "Live Stripe revenue, subscriptions, and payouts.";
+  if (section === "errors") return "Live errors from your apps via Sentry.";
   return "Manage Pro accounts, devices, and onboarding.";
 }
 
@@ -245,6 +252,40 @@ export function WorkflowAdminPage({
   const [revenue, setRevenue] = useState<StripeRevenueOverview | null>(null);
   const [revenueLoading, setRevenueLoading] = useState(false);
   const [revenueError, setRevenueError] = useState("");
+  const [sentryData, setSentryData] = useState<SentryAdminOverview | null>(null);
+  const [sentryLoading, setSentryLoading] = useState(false);
+  const [sentryError, setSentryError] = useState("");
+  const [resolvingIssueId, setResolvingIssueId] = useState("");
+
+  async function loadSentryIssues() {
+    setSentryLoading(true);
+    setSentryError("");
+    try {
+      setSentryData(await fetchSentryAdminIssues());
+    } catch (err) {
+      setSentryError(err instanceof Error ? err.message : "Unable to load Sentry data");
+    } finally {
+      setSentryLoading(false);
+    }
+  }
+
+  async function handleResolveSentry(issueId: string, project: string) {
+    setResolvingIssueId(issueId);
+    try {
+      await resolveSentryIssue(issueId, project);
+      await loadSentryIssues();
+    } catch (err) {
+      setSentryError(err instanceof Error ? err.message : "Resolve failed");
+    } finally {
+      setResolvingIssueId("");
+    }
+  }
+
+  useEffect(() => {
+    if (activeSection === "errors" && !sentryData && !sentryLoading) {
+      void loadSentryIssues();
+    }
+  }, [activeSection]);
 
   async function loadRevenue() {
     setRevenueLoading(true);
@@ -630,6 +671,14 @@ export function WorkflowAdminPage({
             <DollarSign size={17} />
             Revenue
           </button>
+          <button
+            type="button"
+            className={activeSection === "errors" ? "active" : ""}
+            onClick={() => showWorkflowSection("errors")}
+          >
+            <Ban size={17} />
+            Errors
+          </button>
 
           <span className="workflow-admin-nav-group">Pro Accounts</span>
           <button
@@ -1000,7 +1049,93 @@ export function WorkflowAdminPage({
           </section>
         ) : null}
 
-        {activeSection !== "firmware" && activeSection !== "testDashboard" && activeSection !== "testProDashboard" && activeSection !== "revenue" ? (
+        {activeSection === "errors" ? (
+          <section className="workflow-section" id="workflow-errors">
+            <div className="workflow-section-heading">
+              <h2>Live errors</h2>
+              <p>Unresolved issues from your apps (last 14 days). Pulled live from Sentry.</p>
+            </div>
+
+            {sentryLoading && !sentryData ? (
+              <div className="workflow-empty-state">Loading Sentry data…</div>
+            ) : null}
+            {sentryError ? <div className="error-box">{sentryError}</div> : null}
+
+            {sentryData ? (
+              <>
+                <div className="workflow-revenue-grid">
+                  <article className="workflow-revenue-card red">
+                    <div className="workflow-revenue-card-icon"><Ban size={18} /></div>
+                    <span>Critical issues</span>
+                    <strong>{sentryData.stats.critical}</strong>
+                    <small>Fatal + error level</small>
+                  </article>
+                  <article className="workflow-revenue-card orange">
+                    <div className="workflow-revenue-card-icon"><ShieldCheck size={18} /></div>
+                    <span>Warnings</span>
+                    <strong>{sentryData.stats.warnings}</strong>
+                    <small>Less severe</small>
+                  </article>
+                  <article className="workflow-revenue-card purple">
+                    <div className="workflow-revenue-card-icon"><Database size={18} /></div>
+                    <span>Total events</span>
+                    <strong>{sentryData.stats.total_events.toLocaleString()}</strong>
+                    <small>Across all issues</small>
+                  </article>
+                  <article className="workflow-revenue-card blue">
+                    <div className="workflow-revenue-card-icon"><UserRoundPlus size={18} /></div>
+                    <span>Affected users</span>
+                    <strong>{sentryData.stats.affected_users.toLocaleString()}</strong>
+                    <small>Unique users hit</small>
+                  </article>
+                </div>
+
+                <div className="workflow-revenue-table-wrap">
+                  <h3>Recent unresolved issues</h3>
+                  {sentryData.issues.length === 0 ? (
+                    <p className="workflow-empty">No unresolved issues. Everything's running clean.</p>
+                  ) : (
+                    <div className="workflow-sentry-issue-list">
+                      {sentryData.issues.map((issue) => (
+                        <article key={issue.id} className={`workflow-sentry-issue level-${issue.level}`}>
+                          <div className="workflow-sentry-issue-main">
+                            <div className="workflow-sentry-issue-header">
+                              <span className={`workflow-sentry-level level-${issue.level}`}>{issue.level}</span>
+                              <span className="workflow-sentry-project">{issue.project}</span>
+                              <span className="workflow-sentry-when">Last seen {formatShortDateTime(issue.last_seen)}</span>
+                            </div>
+                            <h4>{issue.title}</h4>
+                            {issue.culprit ? <p className="workflow-sentry-culprit">{issue.culprit}</p> : null}
+                            <div className="workflow-sentry-stats">
+                              <span><strong>{issue.count.toLocaleString()}</strong> event{issue.count === 1 ? "" : "s"}</span>
+                              <span><strong>{issue.user_count.toLocaleString()}</strong> user{issue.user_count === 1 ? "" : "s"}</span>
+                              <span>First seen {formatShortDateTime(issue.first_seen)}</span>
+                            </div>
+                          </div>
+                          <div className="workflow-sentry-issue-actions">
+                            <a href={issue.permalink} target="_blank" rel="noreferrer" className="workflow-sentry-link">
+                              View in Sentry
+                            </a>
+                            <button
+                              type="button"
+                              className="workflow-sentry-resolve"
+                              disabled={resolvingIssueId === issue.id}
+                              onClick={() => handleResolveSentry(issue.id, issue.project)}
+                            >
+                              {resolvingIssueId === issue.id ? "Resolving…" : "Resolve"}
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : null}
+          </section>
+        ) : null}
+
+        {activeSection !== "firmware" && activeSection !== "testDashboard" && activeSection !== "testProDashboard" && activeSection !== "revenue" && activeSection !== "errors" ? (
           <>
         {activeSection === "overview" ? (
         <>
