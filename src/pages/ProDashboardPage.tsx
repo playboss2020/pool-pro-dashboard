@@ -1583,8 +1583,13 @@ export function ProDashboardPage({
                     const isLastOwner = member.role === "owner" && ownerCount <= 1;
                     const canRemoveMember = canManageTeam && !isCurrentUser && !isLastOwner;
 
+                    const roleAttr = isCurrentUser ? "you" : String(member.role || "viewer").toLowerCase();
                     return (
-                      <article className="pro-team-row" key={`${member.organization_id}-${member.user_id}`}>
+                      <article
+                        className="pro-team-row"
+                        data-role={roleAttr}
+                        key={`${member.organization_id}-${member.user_id}`}
+                      >
                         <div className="pro-team-avatar">{memberName(member).slice(0, 1).toUpperCase()}</div>
                         <div>
                           <strong>{memberName(member)}</strong>
@@ -1625,7 +1630,11 @@ export function ProDashboardPage({
 
                 <div className="pro-team-list">
                   {invites.length > 0 ? invites.map((invite) => (
-                    <article className="pro-team-row" key={invite.id}>
+                    <article
+                      className="pro-team-row"
+                      data-role={String(invite.role || "viewer").toLowerCase()}
+                      key={invite.id}
+                    >
                       <div className="pro-team-avatar muted">{invite.email.slice(0, 1).toUpperCase()}</div>
                       <div>
                         <strong>{invite.email}</strong>

@@ -3624,40 +3624,103 @@ button:disabled {
 
 .pro-team-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: 46px minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  gap: 14px;
+  padding: 14px 16px;
   border-radius: 14px;
-  background: #f0f8fc;
+  background: linear-gradient(135deg, #ffffff, #f7fbff);
+  border: 1px solid rgba(11, 131, 185, 0.1);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s;
+}
+.pro-team-row:hover {
+  transform: translateY(-1px);
+  border-color: rgba(11, 131, 185, 0.25);
+  box-shadow: 0 8px 18px rgba(15, 60, 90, 0.07);
+}
+
+.pro-team-row strong {
+  font-size: 14px;
+  font-weight: 800;
+  color: #102a3b;
+}
+
+.pro-team-row > div:nth-of-type(2) span {
+  color: #6b879b;
+  font-size: 12px;
+  font-weight: 650;
+  word-break: break-all;
 }
 
 .pro-team-row b {
-  min-height: 30px;
-  display: inline-grid;
-  place-items: center;
-  padding: 0 10px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
   border-radius: 999px;
-  color: #0b6f9d;
-  background: #ffffff;
-  font-size: 12px;
-  text-transform: capitalize;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: #e6eef4;
+  color: #475467;
+  white-space: nowrap;
+}
+/* Role-colored badges driven by data-role attribute on the row */
+.pro-team-row[data-role="owner"] b { background: #fef3c7; color: #b45309; }
+.pro-team-row[data-role="manager"] b { background: #dbeafe; color: #1d4ed8; }
+.pro-team-row[data-role="technician"] b { background: #dcfce7; color: #15803d; }
+.pro-team-row[data-role="viewer"] b { background: #f1f5f9; color: #475569; }
+.pro-team-row[data-role="you"] b { background: #ede9fe; color: #6d4ad6; }
+
+/* Avatar gets a colored ring matching the role */
+.pro-team-row[data-role="owner"] .pro-team-avatar { background: linear-gradient(135deg, #fbbf24, #d97706); }
+.pro-team-row[data-role="manager"] .pro-team-avatar { background: linear-gradient(135deg, #60a5fa, #2563eb); }
+.pro-team-row[data-role="technician"] .pro-team-avatar { background: linear-gradient(135deg, #4ade80, #15803d); }
+.pro-team-row[data-role="viewer"] .pro-team-avatar { background: linear-gradient(135deg, #94a3b8, #475569); }
+.pro-team-row[data-role="you"] .pro-team-avatar { background: linear-gradient(135deg, #a78bfa, #6d4ad6); }
+.pro-team-row .pro-team-avatar.muted {
+  background: linear-gradient(135deg, #e2e8f0, #94a3b8) !important;
 }
 
 .pro-team-row button {
   min-height: 32px;
-  border: 0;
+  border: 1px solid rgba(11, 131, 185, 0.18);
   border-radius: 11px;
-  padding: 0 10px;
+  padding: 0 14px;
   color: #0b6f9d;
-  background: #ffffff;
-  font-weight: 900;
+  background: white;
+  font-weight: 800;
+  font-size: 12px;
   white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
 }
+.pro-team-row button:hover { background: #eef8ff; }
 
 .pro-team-row button.danger {
-  color: #b23d23;
-  background: #fff0ea;
+  color: #b91c1c;
+  background: white;
+  border-color: rgba(239, 68, 68, 0.25);
+}
+.pro-team-row button.danger:hover {
+  background: #fef2f2;
+  border-color: rgba(239, 68, 68, 0.55);
+}
+
+@media (max-width: 640px) {
+  .pro-team-row {
+    grid-template-columns: 40px 1fr auto;
+    grid-template-areas:
+      "avatar info action"
+      "avatar role action";
+    column-gap: 12px;
+    row-gap: 4px;
+  }
+  .pro-team-row .pro-team-avatar { grid-area: avatar; }
+  .pro-team-row > div:nth-of-type(2) { grid-area: info; }
+  .pro-team-row b { grid-area: role; justify-self: start; }
+  .pro-team-row button { grid-area: action; }
 }
 
 .pro-team-avatar {
