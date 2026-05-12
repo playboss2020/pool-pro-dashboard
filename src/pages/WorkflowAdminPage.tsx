@@ -552,6 +552,13 @@ export function WorkflowAdminPage({
 
       setRegisteredDevice(result);
       await onRefresh();
+      // Scroll the firmware values panel into view so download buttons are obvious
+      window.requestAnimationFrame(() => {
+        document.getElementById("workflow-firmware-values")?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      });
     } catch (err) {
       setRegisterDeviceError(err instanceof Error ? err.message : "Unable to register device");
     } finally {
@@ -1277,32 +1284,38 @@ export function WorkflowAdminPage({
             </div>
 
             {registeredDevice ? (
-              <div className="workflow-firmware-box">
-                <div>
-                  <strong>Firmware values</strong>
-                  <span className="workflow-firmware-actions">
-                    <button type="button" onClick={() => void copyRegisteredFirmware()}>
-                      <Copy size={14} />
-                      Copy
-                    </button>
-                    <button type="button" onClick={() => void downloadRegisteredHubCode()}>
-                      <Download size={14} />
-                      Hub code
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!latestNodeTemplate?.code}
-                      onClick={() => void downloadRegisteredNodeCode()}
-                    >
-                      <Download size={14} />
-                      Node code
-                    </button>
-                  </span>
+              <div className="workflow-firmware-box workflow-firmware-success" id="workflow-firmware-values">
+                <div className="workflow-firmware-success-header">
+                  <CheckCircle2 size={20} />
+                  <div>
+                    <strong>Device registered — download firmware now</strong>
+                    <small>Serial <b>{registeredDevice.firmware.serial_number}</b> · Device ID <b>{registeredDevice.firmware.device_id}</b></small>
+                  </div>
+                </div>
+                <div className="workflow-firmware-download-row">
+                  <button type="button" className="workflow-primary-download" onClick={() => void downloadRegisteredHubCode()}>
+                    <Download size={16} />
+                    Download Hub firmware
+                  </button>
+                  <button
+                    type="button"
+                    className="workflow-primary-download"
+                    disabled={!latestNodeTemplate?.code}
+                    onClick={() => void downloadRegisteredNodeCode()}
+                  >
+                    <Download size={16} />
+                    Download Node firmware
+                  </button>
+                  <button type="button" className="workflow-secondary-download" onClick={() => void copyRegisteredFirmware()}>
+                    <Copy size={14} />
+                    Copy values
+                  </button>
                 </div>
                 <pre>{firmwareSnippet(registeredDevice)}</pre>
                 <small>
-                  Download the matched hub and node sketches now. Hub uses {latestHubTemplate ? `saved template ${latestHubTemplate.version}` : "bundled fallback template"}.
+                  Hub uses {latestHubTemplate ? `saved template ${latestHubTemplate.version}` : "bundled fallback template"}.
                   Node uses {latestNodeTemplate ? `saved template ${latestNodeTemplate.version}` : "the node template after you save it in Firmware"}.
+                  Both files are also saved to the audit log below.
                 </small>
               </div>
             ) : null}

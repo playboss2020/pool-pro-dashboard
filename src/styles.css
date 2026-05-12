@@ -4880,6 +4880,84 @@ button:disabled {
 
 .workflow-download-history { margin-top: 16px; }
 
+.workflow-firmware-success {
+  border: 2px solid #22c55e !important;
+  background: linear-gradient(160deg, #f0fdf4, #ffffff) !important;
+  margin-top: 16px;
+  padding: 18px !important;
+  box-shadow: 0 14px 32px rgba(34, 197, 94, 0.18) !important;
+}
+.workflow-firmware-success-header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.workflow-firmware-success-header svg {
+  color: #16a34a;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.workflow-firmware-success-header strong {
+  display: block;
+  font-size: 16px;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+.workflow-firmware-success-header small {
+  display: block;
+  font-size: 12px;
+  color: #475467;
+  font-weight: 600;
+}
+.workflow-firmware-success-header b { font-family: ui-monospace, monospace; color: #102a3b; }
+
+.workflow-firmware-download-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.workflow-primary-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #0b83b9;
+  color: white;
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 20px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(11, 131, 185, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s;
+}
+.workflow-primary-download:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(11, 131, 185, 0.32);
+  background: #0972a3;
+}
+.workflow-primary-download:disabled {
+  background: #94a8b6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.workflow-secondary-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: white;
+  color: #475467;
+  border: 1px solid rgba(15, 60, 90, 0.16);
+  border-radius: 12px;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.workflow-secondary-download:hover { background: #f7fbff; }
+
 /* Sentry issues */
 .workflow-sentry-issue-list {
   display: grid;
