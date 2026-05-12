@@ -101,12 +101,29 @@ Deno.serve(async (req) => {
 
     const { data: device, error: deviceError } = await supabase
       .from("devices")
-      .select("user_id")
+      .select("user_id, organization_id")
       .eq("device_id", deviceId)
       .single();
 
-    if (deviceError || device?.user_id !== user.id) {
+    if (deviceError || !device) {
       return jsonResponse({ error: "Device not found" }, 404);
+    }
+
+    let canSendCommand = device.user_id === user.id;
+    if (!canSendCommand && device.organization_id) {
+      const { data: membership, error: membershipError } = await supabase
+        .from("organization_members")
+        .select("role")
+        .eq("organization_id", device.organization_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (membershipError) return jsonResponse({ error: membershipError.message }, 500);
+      canSendCommand = ["owner", "manager", "technician"].includes(String(membership?.role ?? ""));
+    }
+
+    if (!canSendCommand) {
+      return jsonResponse({ error: "You do not have permission to control this device" }, 403);
     }
 
     const command = {

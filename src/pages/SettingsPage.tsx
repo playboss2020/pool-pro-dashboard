@@ -26,6 +26,7 @@ import { useAuth } from "../hooks/useAuth";
 type SettingsPageProps = {
   device: PoolDevice | null;
   userId: string;
+  canRemoveDevice?: boolean;
 };
 
 type CalibrationMode = "temperature" | "wattage";
@@ -419,7 +420,7 @@ function RemoveDeviceSheet({
   );
 }
 
-export function SettingsPage({ device, userId }: SettingsPageProps) {
+export function SettingsPage({ device, userId, canRemoveDevice = true }: SettingsPageProps) {
   const auth = useAuth();
   const [activePicker, setActivePicker] = useState<CalibrationMode | null>(null);
   const [tempOffset, setTempOffset] = useState(0);
@@ -567,21 +568,23 @@ export function SettingsPage({ device, userId }: SettingsPageProps) {
           <ChevronRight size={18} />
         </button>
 
-        <button
-          className="settings-row settings-action-row danger-row"
-          type="button"
-          onClick={() => setShowRemoveDevice(true)}
-          disabled={!device}
-        >
-          <div className="settings-row-icon danger">
-            <Trash2 size={18} />
-          </div>
-          <div className="settings-row-text">
-            <span>Remove current hub</span>
-            <strong>Unlink from this account</strong>
-          </div>
-          <ChevronRight size={18} />
-        </button>
+        {canRemoveDevice ? (
+          <button
+            className="settings-row settings-action-row danger-row"
+            type="button"
+            onClick={() => setShowRemoveDevice(true)}
+            disabled={!device}
+          >
+            <div className="settings-row-icon danger">
+              <Trash2 size={18} />
+            </div>
+            <div className="settings-row-text">
+              <span>Remove current hub</span>
+              <strong>Unlink from this account</strong>
+            </div>
+            <ChevronRight size={18} />
+          </button>
+        ) : null}
       </article>
 
       <section className="section-heading compact">
@@ -715,7 +718,7 @@ export function SettingsPage({ device, userId }: SettingsPageProps) {
         />
       ) : null}
 
-      {showRemoveDevice ? (
+      {showRemoveDevice && canRemoveDevice ? (
         <RemoveDeviceSheet
           device={device}
           removing={removingDevice}

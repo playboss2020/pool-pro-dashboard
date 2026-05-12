@@ -6,15 +6,18 @@ import { useAlerts } from "./hooks/useAlerts";
 import { useDevice } from "./hooks/useDevice";
 import { useDevices } from "./hooks/useDevices";
 import { useProAccount } from "./hooks/useProAccount";
+import { useWorkflowAdmin } from "./hooks/useWorkflowAdmin";
 import { HubSwitcherSheet } from "./components/HubSwitcherSheet";
 import { AlertsPage } from "./pages/AlertsPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { DashboardPage, NoDeviceDashboard } from "./pages/DashboardPage";
+import { DemoHomeownerDashboardPage, DemoProDashboardPage } from "./pages/DemoDashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ProDashboardPage } from "./pages/ProDashboardPage";
 import { SchedulesPage } from "./pages/SchedulesPage";
 import { SettingsPage } from "./pages/SettingsPage";
-import { bootstrapProAccount, type Organization, type PoolDevice } from "./lib/deviceApi";
+import { WorkflowAdminPage } from "./pages/WorkflowAdminPage";
+import { bootstrapProAccount, type DeviceScheduleOverride, type Organization, type OrganizationInvite, type OrganizationMember, type PoolDevice } from "./lib/deviceApi";
 import { deviceId, selectDeviceId } from "./lib/supabase";
 import "./styles.css";
 
@@ -24,6 +27,7 @@ const proDeviceModeStorageKey = "pool-pro-open-device-dashboard";
 const proSelfSetupEnabled = import.meta.env.VITE_ENABLE_PRO_SELF_SETUP === "true";
 
 export default function App() {
+  const demoDashboard = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("demo") : "";
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [showHubSwitcher, setShowHubSwitcher] = useState(false);
   const [showAddDevice, setShowAddDevice] = useState(false);
@@ -32,6 +36,9 @@ export default function App() {
   const [proSetupError, setProSetupError] = useState("");
   const [proDevicesOverride, setProDevicesOverride] = useState<PoolDevice[] | null>(null);
   const [proOrganizationOverride, setProOrganizationOverride] = useState<Organization | null>(null);
+  const [proMembersOverride, setProMembersOverride] = useState<OrganizationMember[] | null>(null);
+  const [proInvitesOverride, setProInvitesOverride] = useState<OrganizationInvite[] | null>(null);
+  const [proScheduleOverrides, setProScheduleOverrides] = useState<DeviceScheduleOverride[] | null>(null);
   const [showProDeviceDashboard, setShowProDeviceDashboard] = useState(() => {
     try {
       return window.sessionStorage.getItem(proDeviceModeStorageKey) === "true";
@@ -40,7 +47,8 @@ export default function App() {
     }
   });
   const auth = useAuth();
-  const proAccount = useProAccount(auth.user?.id);
+  const workflowAdmin = useWorkflowAdmin(auth.user?.id);
+  const proAccount = useProAccount(workflowAdmin.isAdmin ? undefined : auth.user?.id);
   const singleDeviceModeEnabled = Boolean(auth.user) && (!proAccount.account || showProDeviceDashboard);
   const { device, loading, error, refresh, refreshBurst } = useDevice(singleDeviceModeEnabled);
   const devices = useDevices(Boolean(auth.user) && !proAccount.account);
@@ -48,6 +56,9 @@ export default function App() {
   const isProAccount = Boolean(proAccount.account);
   const proOrganization = proOrganizationOverride ?? proAccount.account?.organization ?? null;
   const proDevices = proDevicesOverride ?? proAccount.account?.devices ?? [];
+  const proMembers = proMembersOverride ?? proAccount.account?.members ?? [];
+  const proInvites = proInvitesOverride ?? proAccount.account?.invites ?? [];
+  const proOverrides = proScheduleOverrides ?? proAccount.account?.scheduleOverrides ?? [];
   const checkingDevices = Boolean(auth.user) && !isProAccount && devices.loading;
   const hasNoDevices = Boolean(auth.user) && !isProAccount && !devices.loading && devices.devices.length === 0;
 
@@ -108,7 +119,18 @@ export default function App() {
   useEffect(() => {
     setProDevicesOverride(null);
     setProOrganizationOverride(null);
+    setProMembersOverride(null);
+    setProInvitesOverride(null);
+    setProScheduleOverrides(null);
   }, [proAccount.account?.organization.id]);
+
+  if (demoDashboard === "pro") {
+    return <DemoProDashboardPage />;
+  }
+
+  if (demoDashboard === "home") {
+    return <DemoHomeownerDashboardPage />;
+  }
 
   if (!auth.configured) {
     return (
@@ -133,10 +155,44 @@ export default function App() {
     return <LoginPage />;
   }
 
+  if (workflowAdmin.loading) {
+    return (
+      <div className="login-screen">
+        <div className="loading-box">Checking admin access...</div>
+      </div>
+    );
+  }
+
+  if (workflowAdmin.overview) {
+    return (
+      <WorkflowAdminPage
+        overview={workflowAdmin.overview}
+        onRefresh={workflowAdmin.refresh}
+        onSignOut={auth.signOut}
+      />
+    );
+  }
+
   if (proAccount.loading) {
     return (
       <div className="login-screen">
         <div className="loading-box">Checking account access...</div>
+      </div>
+    );
+  }
+
+  if (proAccount.account?.organization.account_status === "suspended") {
+    return (
+      <div className="login-screen">
+        <div className="login-card">
+          <h1>Account paused</h1>
+          <p className="login-copy">
+            This Pro dashboard is currently suspended. Pool hubs keep running locally, but cloud dashboard access is paused.
+          </p>
+          <button className="primary-button" type="button" onClick={auth.signOut}>
+            Sign out
+          </button>
+        </div>
       </div>
     );
   }
@@ -147,8 +203,41 @@ export default function App() {
         organization={proOrganization ?? proAccount.account.organization}
         membership={proAccount.account.membership}
         devices={proDevices}
+        members={proMembers}
+        invites={proInvites}
+        scheduleOverrides={proOverrides}
         onSignOut={auth.signOut}
         onOrganizationUpdated={setProOrganizationOverride}
+        onScheduleOverrideSaved={(override) => {
+          setProScheduleOverrides((current) => {
+            const source = current ?? proAccount.account?.scheduleOverrides ?? [];
+            return [override, ...source.filter((item) => item.id !== override.id)];
+          });
+        }}
+        onScheduleOverrideCancelled={(overrideId) => {
+          setProScheduleOverrides((current) => {
+            const source = current ?? proAccount.account?.scheduleOverrides ?? [];
+            return source.filter((item) => item.id !== overrideId);
+          });
+        }}
+        onInviteCreated={(invite) => {
+          setProInvitesOverride((current) => {
+            const source = current ?? proAccount.account?.invites ?? [];
+            return [invite, ...source.filter((item) => item.id !== invite.id)];
+          });
+        }}
+        onMemberRemoved={(userId) => {
+          setProMembersOverride((current) => {
+            const source = current ?? proAccount.account?.members ?? [];
+            return source.filter((member) => member.user_id !== userId);
+          });
+        }}
+        onInviteCancelled={(inviteId) => {
+          setProInvitesOverride((current) => {
+            const source = current ?? proAccount.account?.invites ?? [];
+            return source.filter((invite) => invite.id !== inviteId);
+          });
+        }}
         onPropertyUpdated={(updatedDevice) => {
           setProDevicesOverride((current) => {
             const source = current ?? proAccount.account?.devices ?? [];
@@ -218,7 +307,13 @@ export default function App() {
       {activeTab === "schedules" ? <SchedulesPage userId={auth.user.id} /> : null}
       {activeTab === "analytics" ? <AnalyticsPage device={device} /> : null}
       {activeTab === "alerts" ? <AlertsPage alerts={alerts} /> : null}
-      {activeTab === "settings" ? <SettingsPage device={device} userId={auth.user.id} /> : null}
+      {activeTab === "settings" ? (
+        <SettingsPage
+          device={device}
+          userId={auth.user.id}
+          canRemoveDevice={!proAccount.account || proAccount.account.membership.role === "owner"}
+        />
+      ) : null}
       {showHubSwitcher ? (
         <HubSwitcherSheet
           devices={devices.devices}

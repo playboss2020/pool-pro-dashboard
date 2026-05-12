@@ -8,6 +8,7 @@ Deno.serve(async (req) => {
   try {
     const device = await requireDevice(req);
     const supabase = serviceClient();
+    const includeOverrides = new URL(req.url).searchParams.get("include_overrides") === "1";
 
     const { data, error } = await supabase
       .from("device_schedules")
@@ -16,6 +17,22 @@ Deno.serve(async (req) => {
       .order("target", { ascending: true });
 
     if (error) return jsonResponse({ error: error.message }, 500);
+
+    if (includeOverrides) {
+      const { data: overrides, error: overridesError } = await supabase
+        .from("device_schedule_overrides")
+        .select("id, name, override_type, start_date, end_date, start_time, end_time, pump_on, heater_enabled, setpoint, suspend_regular_schedules, status, updated_at")
+        .eq("device_id", device.deviceId)
+        .neq("status", "cancelled")
+        .order("start_date", { ascending: true });
+
+      if (overridesError) return jsonResponse({ error: overridesError.message }, 500);
+      return jsonResponse({
+        schedules: data ?? [],
+        overrides: overrides ?? [],
+      });
+    }
+
     return jsonResponse(data ?? []);
   } catch (error) {
     if (isResponse(error)) return error;

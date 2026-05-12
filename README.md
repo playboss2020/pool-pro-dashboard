@@ -37,3 +37,22 @@ Replace `YOUR_PRO_USER_UUID` with the UUID from Supabase Auth.
 - User belongs to an organization: opens Pro fleet dashboard.
 - Pro user selects a property: opens that device's full dashboard.
 - Home icon inside the device dashboard returns to the Pro fleet dashboard.
+- User email is listed in the `WORKFLOW_ADMIN_EMAILS` Edge Function secret: opens the internal Workflow Admin dashboard first.
+
+## Workflow Admin
+
+The internal company-owner dashboard is protected by the `workflow-admin` Supabase Edge Function. It is not controlled by a frontend flag.
+
+Set the allowed owner email as a Supabase secret:
+
+```bash
+npx supabase secrets set WORKFLOW_ADMIN_EMAILS=you@yourcompany.com
+```
+
+The first version can:
+
+- View Pro companies, devices, unassigned hubs, claim records, and pending invites.
+- Create a Pro company account for a customer owner email.
+- Assign an existing hub to a Pro company.
+
+Keep `WORKFLOW_ADMIN_EMAILS` to trusted company owner/admin emails only.

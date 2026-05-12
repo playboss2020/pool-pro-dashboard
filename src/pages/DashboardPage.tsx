@@ -12,6 +12,7 @@ type DashboardPageProps = {
   error: string;
   onRefresh: () => void;
   onCommandSettled: () => void;
+  demoMode?: boolean;
 };
 
 function formatValue(value: number | null | undefined, suffix = "") {
@@ -117,6 +118,7 @@ export function DashboardPage({
   error,
   onRefresh,
   onCommandSettled,
+  demoMode = false,
 }: DashboardPageProps) {
   const cleanPumpIconSrc = useTransparentImage(pumpIconSrc, 24, 14);
   const [optimisticPumpOn, setOptimisticPumpOn] = useState<boolean | null>(null);
@@ -367,6 +369,12 @@ export function DashboardPage({
   }
 
   async function sendDashboardCommand(commandType: DeviceCommandType, payload: Record<string, unknown> = {}) {
+    if (demoMode) {
+      console.info("Demo command ignored", commandType, payload);
+      onCommandSettled();
+      return true;
+    }
+
     try {
       setCommandError("");
       const command = await sendCommand(userId, commandType, payload);
@@ -476,6 +484,11 @@ export function DashboardPage({
 
   return (
     <div className="screen-stack dashboard-shell">
+      {demoMode ? (
+        <div className="demo-mode-banner">
+          Demo mode · buttons are simulated and no real pool equipment is controlled.
+        </div>
+      ) : null}
       <section className="hero-card">
         <div className="hero-topline">
           <div className="hero-title-block">

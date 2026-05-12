@@ -42,14 +42,28 @@ Deno.serve(async (req) => {
 
     const { data: device, error: deviceError } = await supabase
       .from("devices")
-      .select("id, user_id, device_id")
+      .select("id, user_id, device_id, organization_id")
       .eq("device_id", deviceId)
       .maybeSingle();
 
     if (deviceError) return jsonResponse({ error: deviceError.message }, 500);
     if (!device) return jsonResponse({ error: "Device was not found" }, 404);
-    if (device.user_id !== user.id) {
-      return jsonResponse({ error: "You do not own this device" }, 403);
+
+    let canRemoveDevice = device.user_id === user.id;
+    if (!canRemoveDevice && device.organization_id) {
+      const { data: membership, error: membershipError } = await supabase
+        .from("organization_members")
+        .select("role")
+        .eq("organization_id", device.organization_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (membershipError) return jsonResponse({ error: membershipError.message }, 500);
+      canRemoveDevice = membership?.role === "owner";
+    }
+
+    if (!canRemoveDevice) {
+      return jsonResponse({ error: "Only the account owner can remove this hub" }, 403);
     }
 
     await deleteDeviceRows(supabase, "device_commands", deviceId);
@@ -61,6 +75,13 @@ Deno.serve(async (req) => {
       .from("devices")
       .update({
         user_id: null,
+        organization_id: null,
+        property_name: null,
+        address: null,
+        city: null,
+        state: null,
+        zip: null,
+        property_notes: null,
         name: "Pool Hub",
         online_status: "offline",
       })

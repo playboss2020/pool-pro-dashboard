@@ -73,6 +73,25 @@ export type DeviceSchedule = {
   updated_at: string;
 };
 
+export type DeviceScheduleOverride = {
+  id: string;
+  user_id: string;
+  device_id: string;
+  name: string | null;
+  override_type: "reservation_heat" | string;
+  start_date: string;
+  end_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  pump_on: boolean;
+  heater_enabled: boolean;
+  setpoint: number | null;
+  suspend_regular_schedules: boolean;
+  status: "scheduled" | "active" | "completed" | "cancelled" | string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type DeviceAlert = {
   id: string;
   alert_type: string;
@@ -110,6 +129,9 @@ export type Organization = {
   id: string;
   name: string;
   plan: "pro" | "enterprise" | string;
+  account_status?: "active" | "suspended" | string;
+  suspended_at?: string | null;
+  logo_url?: string | null;
   company_address?: string | null;
   company_city?: string | null;
   company_state?: string | null;
@@ -120,21 +142,210 @@ export type Organization = {
   created_at: string;
 };
 
+export type OrganizationRole = "owner" | "manager" | "technician" | "viewer";
+
 export type OrganizationMember = {
   organization_id: string;
   user_id: string;
-  role: "owner" | "manager" | "technician" | "viewer" | string;
+  role: OrganizationRole | string;
+  display_name: string | null;
+  email: string | null;
+  created_at: string | null;
+};
+
+export type OrganizationInvite = {
+  id: string;
+  organization_id: string;
+  email: string;
+  role: OrganizationRole | string;
+  status: "pending" | "accepted" | "cancelled" | "expired" | string;
+  invited_by: string | null;
+  created_at: string;
+  accepted_at: string | null;
+  expires_at: string | null;
+};
+
+export type TeamManagementResponse = {
+  message: string;
+  removed_user_id?: string;
+  cancelled_invite_id?: string;
 };
 
 export type ProAccount = {
   organization: Organization;
   membership: OrganizationMember;
   devices: PoolDevice[];
+  members: OrganizationMember[];
+  invites: OrganizationInvite[];
+  scheduleOverrides: DeviceScheduleOverride[];
 };
 
 export type BootstrapProAccountResponse = {
   organization_id: string;
   linked_devices: number;
+  message: string;
+};
+
+export type WorkflowAdminStats = {
+  total_organizations: number;
+  pro_organizations: number;
+  enterprise_organizations: number;
+  suspended_organizations: number;
+  total_devices: number;
+  online_devices: number;
+  unassigned_devices: number;
+  unclaimed_devices: number;
+  ready_to_claim_devices?: number;
+  devices_missing_firmware_download?: number;
+  hub_firmware_downloaded_devices?: number;
+  pending_invites: number;
+};
+
+export type WorkflowAdminOrganization = Organization & {
+  device_count: number;
+  member_count: number;
+  pending_invite_count: number;
+};
+
+export type WorkflowAdminDevice = Pick<
+  PoolDevice,
+  | "id"
+  | "user_id"
+  | "organization_id"
+  | "device_id"
+  | "serial_number"
+  | "name"
+  | "property_name"
+  | "address"
+  | "city"
+  | "state"
+  | "zip"
+  | "current_temp"
+  | "pump_on"
+  | "heater_enabled"
+  | "setpoint"
+  | "total_kwh"
+  | "online_status"
+  | "last_seen"
+  | "updated_at"
+> & {
+  organization_name: string | null;
+};
+
+export type WorkflowAdminClaim = {
+  id: string;
+  serial_number: string;
+  device_id: string;
+  claimed_by: string | null;
+  claimed_at: string | null;
+  expires_at: string | null;
+  created_at: string;
+};
+
+export type WorkflowAdminOverview = {
+  is_admin: boolean;
+  admin_email: string;
+  stats: WorkflowAdminStats;
+  organizations: WorkflowAdminOrganization[];
+  members: OrganizationMember[];
+  invites: OrganizationInvite[];
+  devices: WorkflowAdminDevice[];
+  claims: WorkflowAdminClaim[];
+};
+
+export type WorkflowAdminCreateProInput = {
+  company_name: string;
+  owner_email: string;
+  company_phone: string;
+  plan: "pro" | "enterprise";
+};
+
+export type WorkflowAdminCreateProResponse = {
+  organization: Pick<Organization, "id" | "name" | "plan" | "company_email" | "company_phone" | "created_at">;
+  owner_user_id: string | null;
+  invite_status: string;
+  message: string;
+};
+
+export type WorkflowAdminRegisterDeviceInput = {
+  serial_number: string;
+  device_id: string;
+  device_secret: string;
+  claim_code: string;
+  name: string;
+};
+
+export type WorkflowAdminRegisterDeviceResponse = {
+  device: Pick<PoolDevice, "device_id" | "serial_number" | "name" | "online_status">;
+  claim: WorkflowAdminClaim;
+  firmware: {
+    device_id: string;
+    device_secret: string;
+    serial_number: string;
+    claim_code: string | null;
+  };
+  message: string;
+};
+
+export type WorkflowAdminAssignDeviceInput = {
+  organization_id: string;
+  device_id: string;
+  property_name: string;
+};
+
+export type WorkflowAdminAssignDeviceResponse = {
+  device: Pick<PoolDevice, "device_id" | "serial_number" | "name" | "property_name" | "organization_id">;
+  organization: Pick<Organization, "id" | "name">;
+  message: string;
+};
+
+export type WorkflowAdminOrganizationActionResponse = {
+  organization?: Pick<Organization, "id" | "name" | "account_status" | "suspended_at">;
+  organization_id?: string;
+  message: string;
+};
+
+export type FirmwareTarget = "hub" | "node";
+
+export type WorkflowFirmwareTemplate = {
+  target: FirmwareTarget;
+  version: string;
+  code: string;
+  updated_by: string | null;
+  updated_at: string;
+};
+
+export type WorkflowFirmwareTemplatesResponse = {
+  templates: WorkflowFirmwareTemplate[];
+};
+
+export type WorkflowFirmwareTemplateSaveInput = {
+  target: FirmwareTarget;
+  version: string;
+  code: string;
+};
+
+export type WorkflowFirmwareTemplateSaveResponse = {
+  template: WorkflowFirmwareTemplate;
+  message: string;
+};
+
+export type WorkflowFirmwareDownloadInput = {
+  device_id: string;
+  serial_number: string | null;
+  target: FirmwareTarget;
+  template_version: string;
+};
+
+export type WorkflowFirmwareDownloadResponse = {
+  download: {
+    id: string;
+    device_id: string;
+    serial_number: string | null;
+    target: FirmwareTarget;
+    template_version: string | null;
+    downloaded_at: string;
+  };
   message: string;
 };
 
@@ -157,6 +368,17 @@ export type OrganizationProfileInput = {
   company_phone: string;
   company_email: string;
   company_notes: string;
+};
+
+export type DeviceScheduleOverrideInput = {
+  user_id: string;
+  device_id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  start_time: string;
+  end_time: string;
+  setpoint: number | null;
 };
 
 const DEVICE_SELECT_COLUMNS = [
@@ -203,6 +425,9 @@ const ORGANIZATION_SELECT_COLUMNS = [
   "id",
   "name",
   "plan",
+  "account_status",
+  "suspended_at",
+  "logo_url",
   "company_address",
   "company_city",
   "company_state",
@@ -211,6 +436,27 @@ const ORGANIZATION_SELECT_COLUMNS = [
   "company_email",
   "company_notes",
   "created_at",
+].join(",");
+
+const ORGANIZATION_MEMBER_SELECT_COLUMNS = "organization_id,user_id,role,display_name,email,created_at";
+const ORGANIZATION_INVITE_SELECT_COLUMNS = "id,organization_id,email,role,status,invited_by,created_at,accepted_at,expires_at";
+const SCHEDULE_OVERRIDE_SELECT_COLUMNS = [
+  "id",
+  "user_id",
+  "device_id",
+  "name",
+  "override_type",
+  "start_date",
+  "end_date",
+  "start_time",
+  "end_time",
+  "pump_on",
+  "heater_enabled",
+  "setpoint",
+  "suspend_regular_schedules",
+  "status",
+  "created_at",
+  "updated_at",
 ].join(",");
 
 export async function fetchDevice() {
@@ -240,7 +486,7 @@ export async function fetchProAccount(userId: string): Promise<ProAccount | null
   const client = requireSupabase();
   const { data: membershipData, error: membershipError } = await client
     .from("organization_members")
-    .select("organization_id,user_id,role")
+    .select(ORGANIZATION_MEMBER_SELECT_COLUMNS)
     .eq("user_id", userId)
     .limit(1)
     .maybeSingle();
@@ -258,6 +504,9 @@ export async function fetchProAccount(userId: string): Promise<ProAccount | null
     organization_id: String(membershipData.organization_id),
     user_id: String(membershipData.user_id),
     role: String(membershipData.role),
+    display_name: membershipData.display_name ? String(membershipData.display_name) : null,
+    email: membershipData.email ? String(membershipData.email) : null,
+    created_at: membershipData.created_at ? String(membershipData.created_at) : null,
   };
 
   const { data: organization, error: organizationError } = await client
@@ -277,10 +526,49 @@ export async function fetchProAccount(userId: string): Promise<ProAccount | null
 
   if (devicesError) throw devicesError;
 
+  const { data: members, error: membersError } = await client
+    .from("organization_members")
+    .select(ORGANIZATION_MEMBER_SELECT_COLUMNS)
+    .eq("organization_id", organization.id)
+    .order("created_at", { ascending: true });
+
+  if (membersError) throw membersError;
+
+  const { data: invites, error: invitesError } = await client
+    .from("organization_invites")
+    .select(ORGANIZATION_INVITE_SELECT_COLUMNS)
+    .eq("organization_id", organization.id)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  if (invitesError) {
+    if (!["42P01", "42703", "PGRST205"].includes(invitesError.code ?? "")) throw invitesError;
+  }
+
+  const deviceIds = ((devices ?? []) as unknown as PoolDevice[]).map((device) => device.device_id);
+  let scheduleOverrides: DeviceScheduleOverride[] = [];
+  if (deviceIds.length > 0) {
+    const { data: overrides, error: overridesError } = await client
+      .from("device_schedule_overrides")
+      .select(SCHEDULE_OVERRIDE_SELECT_COLUMNS)
+      .in("device_id", deviceIds)
+      .neq("status", "cancelled")
+      .order("start_date", { ascending: true });
+
+    if (overridesError) {
+      if (!["42P01", "42703", "PGRST205"].includes(overridesError.code ?? "")) throw overridesError;
+    } else {
+      scheduleOverrides = (overrides ?? []) as unknown as DeviceScheduleOverride[];
+    }
+  }
+
   return {
     organization,
     membership,
     devices: (devices ?? []) as unknown as PoolDevice[],
+    members: (members ?? []) as unknown as OrganizationMember[],
+    invites: (invites ?? []) as unknown as OrganizationInvite[],
+    scheduleOverrides,
   };
 }
 
@@ -295,6 +583,131 @@ export async function bootstrapProAccount() {
 
   if (error) throw error;
   if (!data?.organization_id) throw new Error("Pro account was not created");
+  return data;
+}
+
+export async function fetchWorkflowAdminOverview() {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke<WorkflowAdminOverview | { is_admin: false }>("workflow-admin", {
+    body: {
+      action: "overview",
+    },
+  });
+
+  if (error) throw error;
+  if (!data?.is_admin) return null;
+  return data as WorkflowAdminOverview;
+}
+
+export async function createWorkflowProAccount(input: WorkflowAdminCreateProInput) {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke<WorkflowAdminCreateProResponse>("workflow-admin", {
+    body: {
+      action: "create_pro_account",
+      ...input,
+    },
+  });
+
+  if (error) throw error;
+  if (!data?.organization?.id) throw new Error("Pro account was not created");
+  return data;
+}
+
+export async function registerWorkflowDevice(input: WorkflowAdminRegisterDeviceInput) {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke<WorkflowAdminRegisterDeviceResponse>("workflow-admin", {
+    body: {
+      action: "register_device",
+      ...input,
+    },
+  });
+
+  if (error) throw error;
+  if (!data?.firmware?.device_id) throw new Error("Device was not registered");
+  return data;
+}
+
+export async function assignWorkflowDeviceToOrganization(input: WorkflowAdminAssignDeviceInput) {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke<WorkflowAdminAssignDeviceResponse>("workflow-admin", {
+    body: {
+      action: "assign_device",
+      ...input,
+    },
+  });
+
+  if (error) throw error;
+  if (!data?.device?.device_id) throw new Error("Device was not assigned");
+  return data;
+}
+
+export async function updateWorkflowOrganizationStatus(organizationId: string, accountStatus: "active" | "suspended") {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke<WorkflowAdminOrganizationActionResponse>("workflow-admin", {
+    body: {
+      action: "update_organization_status",
+      organization_id: organizationId,
+      account_status: accountStatus,
+    },
+  });
+
+  if (error) throw error;
+  if (!data?.organization?.id) throw new Error(data?.message || "Organization status was not updated");
+  return data;
+}
+
+export async function deleteWorkflowOrganization(organizationId: string, confirmName: string) {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke<WorkflowAdminOrganizationActionResponse>("workflow-admin", {
+    body: {
+      action: "delete_organization",
+      organization_id: organizationId,
+      confirm_name: confirmName,
+    },
+  });
+
+  if (error) throw error;
+  if (!data?.organization_id) throw new Error(data?.message || "Organization was not deleted");
+  return data;
+}
+
+export async function fetchWorkflowFirmwareTemplates() {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke<WorkflowFirmwareTemplatesResponse>("workflow-admin", {
+    body: {
+      action: "get_firmware_templates",
+    },
+  });
+
+  if (error) throw error;
+  return data?.templates ?? [];
+}
+
+export async function saveWorkflowFirmwareTemplate(input: WorkflowFirmwareTemplateSaveInput) {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke<WorkflowFirmwareTemplateSaveResponse>("workflow-admin", {
+    body: {
+      action: "save_firmware_template",
+      ...input,
+    },
+  });
+
+  if (error) throw error;
+  if (!data?.template) throw new Error("Firmware template was not saved");
+  return data;
+}
+
+export async function recordWorkflowFirmwareDownload(input: WorkflowFirmwareDownloadInput) {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke<WorkflowFirmwareDownloadResponse>("workflow-admin", {
+    body: {
+      action: "record_firmware_download",
+      ...input,
+    },
+  });
+
+  if (error) throw error;
+  if (!data?.download?.id) throw new Error("Firmware download was not recorded");
   return data;
 }
 
@@ -365,6 +778,30 @@ export async function sendCommand(
   return data.command;
 }
 
+export async function sendCommandToDevice(
+  userId: string,
+  targetDeviceId: string,
+  commandType: DeviceCommandType,
+  payload: Record<string, unknown> = {},
+) {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke<{
+    command: DeviceCommand;
+    mqtt: "published" | "not_configured" | "failed";
+  }>("send-device-command", {
+    body: {
+      device_id: targetDeviceId,
+      command_type: commandType,
+      payload,
+      user_id: userId,
+    },
+  });
+
+  if (error) throw error;
+  if (!data?.command) throw new Error("Command was not created");
+  return data.command;
+}
+
 export async function fetchLatestCommand(commandId: string) {
   const client = requireSupabase();
   const { data, error } = await client
@@ -396,6 +833,47 @@ export async function upsertSchedule(input: Omit<DeviceSchedule, "id" | "updated
     .upsert(input)
     .select("*")
     .single<DeviceSchedule>();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function saveScheduleOverride(input: DeviceScheduleOverrideInput, overrideId?: string) {
+  const client = requireSupabase();
+  const payload = {
+    user_id: input.user_id,
+    device_id: input.device_id,
+    name: input.name.trim() || "Reservation heat",
+    override_type: "reservation_heat",
+    start_date: input.start_date,
+    end_date: input.end_date,
+    start_time: `${input.start_time}:00`,
+    end_time: `${input.end_time}:00`,
+    pump_on: true,
+    heater_enabled: true,
+    setpoint: input.setpoint,
+    suspend_regular_schedules: true,
+    status: "scheduled",
+  };
+
+  const query = overrideId
+    ? client.from("device_schedule_overrides").update(payload).eq("id", overrideId)
+    : client.from("device_schedule_overrides").insert(payload);
+
+  const { data, error } = await query.select(SCHEDULE_OVERRIDE_SELECT_COLUMNS).single<DeviceScheduleOverride>();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function cancelScheduleOverride(overrideId: string) {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from("device_schedule_overrides")
+    .update({ status: "cancelled" })
+    .eq("id", overrideId)
+    .select(SCHEDULE_OVERRIDE_SELECT_COLUMNS)
+    .single<DeviceScheduleOverride>();
 
   if (error) throw error;
   return data;
@@ -492,6 +970,93 @@ export async function updateOrganizationProfile(organizationId: string, input: O
     .single<Organization>();
 
   if (error) throw error;
+  return data;
+}
+
+export async function uploadOrganizationLogo(organizationId: string, file: File) {
+  const client = requireSupabase();
+
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Logo must be an image file.");
+  }
+
+  if (file.size > 2 * 1024 * 1024) {
+    throw new Error("Logo must be 2 MB or smaller.");
+  }
+
+  const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
+  const path = `${organizationId}/${Date.now()}.${extension}`;
+
+  const { error: uploadError } = await client.storage
+    .from("organization-logos")
+    .upload(path, file, {
+      cacheControl: "31536000",
+      contentType: file.type,
+      upsert: false,
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { data: publicUrlData } = client.storage.from("organization-logos").getPublicUrl(path);
+  const logoUrl = publicUrlData.publicUrl;
+
+  const { data, error } = await client
+    .from("organizations")
+    .update({ logo_url: logoUrl })
+    .eq("id", organizationId)
+    .select(ORGANIZATION_SELECT_COLUMNS)
+    .single<Organization>();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function inviteOrganizationMember(organizationId: string, email: string, role: OrganizationRole) {
+  const client = requireSupabase();
+  const cleanEmail = email.trim().toLowerCase();
+
+  const { data, error } = await client
+    .from("organization_invites")
+    .insert({
+      organization_id: organizationId,
+      email: cleanEmail,
+      role,
+      status: "pending",
+    })
+    .select(ORGANIZATION_INVITE_SELECT_COLUMNS)
+    .single<OrganizationInvite>();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function removeOrganizationMember(organizationId: string, userId: string) {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke<TeamManagementResponse>("manage-team", {
+    body: {
+      action: "remove_member",
+      organization_id: organizationId,
+      user_id: userId,
+    },
+  });
+
+  if (error) throw error;
+  if (!data?.removed_user_id) throw new Error(data?.message || "Team member was not removed");
+  return data;
+}
+
+export async function cancelOrganizationInvite(organizationId: string, inviteId: string) {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke<TeamManagementResponse>("manage-team", {
+    body: {
+      action: "cancel_invite",
+      organization_id: organizationId,
+      invite_id: inviteId,
+    },
+  });
+
+  if (error) throw error;
+  if (!data?.cancelled_invite_id) throw new Error(data?.message || "Invite was not cancelled");
   return data;
 }
 
