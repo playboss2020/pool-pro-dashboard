@@ -850,33 +850,54 @@ export function WorkflowAdminPage({
 
             {revenue ? (
               <>
-                <div className="workflow-revenue-grid">
-                  <article className="workflow-revenue-card highlight">
+                <div className="workflow-revenue-hero">
+                  <article className="workflow-revenue-hero-card mrr">
+                    <div className="workflow-revenue-hero-icon"><DollarSign size={28} /></div>
                     <span>Monthly Recurring Revenue</span>
                     <strong>{formatCurrency(revenue.mrr_cents / 100)}</strong>
-                    <small>{revenue.active_subscriptions} active subscription{revenue.active_subscriptions === 1 ? "" : "s"}</small>
+                    <small>Projected from active subscriptions</small>
                   </article>
-                  <article className="workflow-revenue-card">
+                  <article className="workflow-revenue-hero-card members">
+                    <div className="workflow-revenue-hero-icon"><UserRoundPlus size={28} /></div>
+                    <span>Active Memberships</span>
+                    <strong>{revenue.active_subscriptions}</strong>
+                    <small>{revenue.active_subscriptions === 1 ? "Paying customer" : "Paying customers"}</small>
+                  </article>
+                </div>
+
+                <div className="workflow-revenue-grid">
+                  <article className="workflow-revenue-card green">
+                    <div className="workflow-revenue-card-icon"><DollarSign size={18} /></div>
                     <span>This month gross</span>
                     <strong>{formatCurrency(revenue.current_month.gross_revenue_cents / 100)}</strong>
                     <small>{revenue.current_month.charges_count} charge{revenue.current_month.charges_count === 1 ? "" : "s"}</small>
                   </article>
-                  <article className="workflow-revenue-card">
-                    <span>Stripe fees this month</span>
+                  <article className="workflow-revenue-card teal">
+                    <div className="workflow-revenue-card-icon"><CheckCircle2 size={18} /></div>
+                    <span>Net this month</span>
+                    <strong>{formatCurrency(revenue.current_month.net_revenue_cents / 100)}</strong>
+                    <small>After Stripe fees</small>
+                  </article>
+                  <article className="workflow-revenue-card orange">
+                    <div className="workflow-revenue-card-icon"><Ban size={18} /></div>
+                    <span>Stripe fees</span>
                     <strong>{formatCurrency(revenue.current_month.stripe_fees_cents / 100)}</strong>
-                    <small>Net: {formatCurrency(revenue.current_month.net_revenue_cents / 100)}</small>
+                    <small>Processing this month</small>
                   </article>
-                  <article className="workflow-revenue-card">
-                    <span>Refunds this month</span>
+                  <article className="workflow-revenue-card red">
+                    <div className="workflow-revenue-card-icon"><RotateCcw size={18} /></div>
+                    <span>Refunds</span>
                     <strong>{formatCurrency(revenue.current_month.refunds_cents / 100)}</strong>
-                    <small>Disputes excluded</small>
+                    <small>This month</small>
                   </article>
-                  <article className="workflow-revenue-card">
+                  <article className="workflow-revenue-card blue">
+                    <div className="workflow-revenue-card-icon"><Download size={18} /></div>
                     <span>Available for payout</span>
                     <strong>{formatCurrency(revenue.balance.available_cents / 100)}</strong>
-                    <small>{revenue.balance.currency.toUpperCase()}</small>
+                    <small>{revenue.balance.currency.toUpperCase()} ready to bank</small>
                   </article>
-                  <article className="workflow-revenue-card">
+                  <article className="workflow-revenue-card purple">
+                    <div className="workflow-revenue-card-icon"><RefreshCw size={18} /></div>
                     <span>Pending in Stripe</span>
                     <strong>{formatCurrency(revenue.balance.pending_cents / 100)}</strong>
                     <small>Settling now</small>
@@ -885,14 +906,29 @@ export function WorkflowAdminPage({
 
                 {Object.keys(revenue.plans_count).length > 0 ? (
                   <div className="workflow-revenue-plans">
-                    <h3>Active subscriptions by plan</h3>
+                    <h3>Active memberships by plan</h3>
                     <div className="workflow-revenue-plan-list">
-                      {Object.entries(revenue.plans_count).map(([plan, count]) => (
-                        <div key={plan} className="workflow-revenue-plan-row">
-                          <strong>{plan}</strong>
-                          <span>{count}</span>
-                        </div>
-                      ))}
+                      {(() => {
+                        const total = Object.values(revenue.plans_count).reduce((s, n) => s + n, 0);
+                        const colors = ["#2eb6e8", "#7c5ce8", "#22c55e", "#f59e0b", "#ef4444"];
+                        return Object.entries(revenue.plans_count).map(([plan, count], i) => {
+                          const pct = total > 0 ? (count / total) * 100 : 0;
+                          return (
+                            <div key={plan} className="workflow-revenue-plan-row">
+                              <div className="workflow-revenue-plan-info">
+                                <strong>{plan}</strong>
+                                <span>{count} member{count === 1 ? "" : "s"} · {pct.toFixed(0)}%</span>
+                              </div>
+                              <div className="workflow-revenue-plan-bar">
+                                <div
+                                  className="workflow-revenue-plan-bar-fill"
+                                  style={{ width: `${pct}%`, background: colors[i % colors.length] }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
                   </div>
                 ) : null}
@@ -905,9 +941,9 @@ export function WorkflowAdminPage({
                         const max = Math.max(...revenue.monthly_revenue.map((m) => m.amount_cents), 1);
                         return revenue.monthly_revenue.map((m) => (
                           <div key={m.month} className="workflow-revenue-bar">
-                            <div className="workflow-revenue-bar-fill" style={{ height: `${(m.amount_cents / max) * 100}%` }} />
-                            <span className="workflow-revenue-bar-label">{m.month.slice(5)}</span>
                             <span className="workflow-revenue-bar-amount">{formatCurrency(m.amount_cents / 100)}</span>
+                            <div className="workflow-revenue-bar-fill" style={{ height: `${Math.max((m.amount_cents / max) * 100, 2)}%` }} />
+                            <span className="workflow-revenue-bar-label">{m.month.slice(5)}</span>
                           </div>
                         ));
                       })()}

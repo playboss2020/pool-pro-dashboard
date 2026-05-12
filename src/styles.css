@@ -4620,41 +4620,120 @@ button:disabled {
   font-weight: 600;
 }
 
-.workflow-revenue-grid {
+.workflow-revenue-hero {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 14px;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
   margin: 16px 0 24px;
 }
 
-.workflow-revenue-card {
+.workflow-revenue-hero-card {
+  position: relative;
   display: grid;
-  gap: 6px;
-  padding: 18px;
-  border: 1px solid rgba(24, 148, 189, 0.18);
-  border-radius: 18px;
-  background: white;
+  gap: 8px;
+  padding: 28px;
+  border-radius: 22px;
+  color: white;
+  overflow: hidden;
+  box-shadow: 0 18px 42px rgba(15, 60, 90, 0.18);
 }
-.workflow-revenue-card.highlight {
-  background: linear-gradient(160deg, #e8f7ff, white);
-  border-color: rgba(24, 148, 189, 0.35);
+.workflow-revenue-hero-card.mrr {
+  background: linear-gradient(135deg, #0b83b9, #126a92 60%, #0a4d72);
 }
-.workflow-revenue-card span {
-  font-size: 11px;
+.workflow-revenue-hero-card.members {
+  background: linear-gradient(135deg, #7c5ce8, #5b3acf 60%, #3f23a8);
+}
+.workflow-revenue-hero-icon {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(8px);
+}
+.workflow-revenue-hero-card span {
+  font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.78);
+}
+.workflow-revenue-hero-card strong {
+  font-size: 48px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.workflow-revenue-hero-card small {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+}
+
+.workflow-revenue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 0 0 24px;
+}
+
+.workflow-revenue-card {
+  position: relative;
+  display: grid;
+  gap: 5px;
+  padding: 18px;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 10px 24px rgba(15, 60, 90, 0.08);
+  border-top: 3px solid transparent;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.workflow-revenue-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px rgba(15, 60, 90, 0.12);
+}
+.workflow-revenue-card.green { border-top-color: #22c55e; }
+.workflow-revenue-card.teal { border-top-color: #14b8a6; }
+.workflow-revenue-card.orange { border-top-color: #f59e0b; }
+.workflow-revenue-card.red { border-top-color: #ef4444; }
+.workflow-revenue-card.blue { border-top-color: #0b83b9; }
+.workflow-revenue-card.purple { border-top-color: #7c5ce8; }
+
+.workflow-revenue-card-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  margin-bottom: 4px;
+}
+.workflow-revenue-card.green .workflow-revenue-card-icon { background: rgba(34,197,94,0.12); color: #16a34a; }
+.workflow-revenue-card.teal .workflow-revenue-card-icon { background: rgba(20,184,166,0.12); color: #0d9488; }
+.workflow-revenue-card.orange .workflow-revenue-card-icon { background: rgba(245,158,11,0.12); color: #d97706; }
+.workflow-revenue-card.red .workflow-revenue-card-icon { background: rgba(239,68,68,0.12); color: #dc2626; }
+.workflow-revenue-card.blue .workflow-revenue-card-icon { background: rgba(11,131,185,0.12); color: #0b83b9; }
+.workflow-revenue-card.purple .workflow-revenue-card-icon { background: rgba(124,92,232,0.12); color: #6d4ad6; }
+
+.workflow-revenue-card span {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: #6b7d8a;
 }
 .workflow-revenue-card strong {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 900;
   color: #102a3b;
   letter-spacing: -0.02em;
 }
 .workflow-revenue-card small {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
   color: #6b7d8a;
 }
 
@@ -4675,46 +4754,91 @@ button:disabled {
 
 .workflow-revenue-plan-list {
   display: grid;
-  gap: 8px;
+  gap: 12px;
 }
 .workflow-revenue-plan-row {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f7fbff, #eef8ff);
+  border: 1px solid rgba(11,131,185,0.1);
+}
+.workflow-revenue-plan-info {
   display: flex;
   justify-content: space-between;
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: #f7fbff;
+  align-items: center;
 }
-.workflow-revenue-plan-row strong { font-weight: 800; color: #102a3b; }
-.workflow-revenue-plan-row span { font-weight: 700; color: #475467; }
+.workflow-revenue-plan-info strong {
+  font-size: 14px;
+  font-weight: 800;
+  color: #102a3b;
+  text-transform: capitalize;
+}
+.workflow-revenue-plan-info span {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475467;
+}
+.workflow-revenue-plan-bar {
+  height: 8px;
+  background: rgba(15,60,90,0.06);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.workflow-revenue-plan-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
 
 .workflow-revenue-bars {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 10px;
+  gap: 14px;
   align-items: end;
-  height: 180px;
+  height: 220px;
+  padding: 10px 4px 0;
 }
 .workflow-revenue-bar {
   display: grid;
-  grid-template-rows: 1fr auto auto;
+  grid-template-rows: auto 1fr auto;
   align-items: end;
-  gap: 6px;
+  gap: 8px;
   text-align: center;
+  height: 100%;
 }
 .workflow-revenue-bar-fill {
-  background: linear-gradient(180deg, #2eb6e8, #126a92);
-  border-radius: 6px 6px 0 0;
-  min-height: 4px;
+  background: linear-gradient(180deg, #2eb6e8 0%, #0b83b9 50%, #0a4d72 100%);
+  border-radius: 10px 10px 4px 4px;
+  min-height: 6px;
+  transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(11,131,185,0.25);
+  position: relative;
+  align-self: end;
+}
+.workflow-revenue-bar-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.25), transparent 50%);
+  border-radius: 10px 10px 4px 4px;
 }
 .workflow-revenue-bar-label {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   color: #6b7d8a;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 .workflow-revenue-bar-amount {
   font-size: 11px;
   font-weight: 800;
   color: #102a3b;
+}
+
+@media (max-width: 800px) {
+  .workflow-revenue-hero { grid-template-columns: 1fr; }
 }
 
 .workflow-revenue-table {
