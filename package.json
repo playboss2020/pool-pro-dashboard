@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@sentry/react": "^10.53.0",
     "@supabase/supabase-js": "^2.105.1",
     "@vitejs/plugin-react": "^5.0.4",
     "lucide-react": "^0.545.0",
