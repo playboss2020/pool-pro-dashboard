@@ -352,6 +352,10 @@ export function WorkflowAdminPage({
     if (activeSection === "registerDevice" && downloadHistory.length === 0 && !downloadHistoryLoading) {
       void loadDownloadHistory();
     }
+    if (activeSection === "overview") {
+      if (!revenue && !revenueLoading) void loadRevenue();
+      if (!sentryData && !sentryLoading) void loadSentryIssues();
+    }
     if (activeSection === "revenue" && !revenue && !revenueLoading) {
       void loadRevenue();
     }
@@ -1239,59 +1243,103 @@ export function WorkflowAdminPage({
         {activeSection !== "firmware" && activeSection !== "testDashboard" && activeSection !== "testProDashboard" && activeSection !== "revenue" && activeSection !== "errors" ? (
           <>
         {activeSection === "overview" ? (
-        <>
-          <section className="workflow-overview-dashboard" id="workflow-overview">
-            <article className="workflow-overview-hero">
-              <div>
-                <span>Company snapshot</span>
-                <h2>{overview.stats.online_devices} of {overview.stats.total_devices} hubs online</h2>
-                <p>
-                  {overview.stats.total_organizations} Pro companies, {overview.stats.unassigned_devices} unassigned hubs,
-                  and {overview.stats.unclaimed_devices} hubs waiting to be claimed.
-                </p>
-              </div>
-              <div className="workflow-overview-hero-metrics">
-                <span><strong>{overview.stats.total_organizations}</strong> Pro companies</span>
-                <span><strong>{overview.stats.total_devices}</strong> Total devices</span>
-                <span><strong>{overview.stats.pending_invites}</strong> Pending invites</span>
+        <section className="workflow-overview-v2" id="workflow-overview">
+          <div className="workflow-overview-v2-hero">
+            <article className="workflow-overview-v2-hero-card mrr">
+              <div className="workflow-overview-v2-hero-icon"><DollarSign size={26} /></div>
+              <span>Monthly Recurring Revenue</span>
+              <strong>{revenue ? formatCurrency(revenue.mrr_cents / 100) : formatCurrency(revenueSnapshot.estimatedMonthlyRevenue)}</strong>
+              <small>{revenue ? `${revenue.active_subscriptions} active subscription${revenue.active_subscriptions === 1 ? "" : "s"}` : "Estimated from Pro + Home plans"}</small>
+            </article>
+            <article className={`workflow-overview-v2-hero-card errors ${sentryData && sentryData.stats.critical > 0 ? "alert" : ""}`}>
+              <div className="workflow-overview-v2-hero-icon"><Ban size={26} /></div>
+              <span>Critical Errors (14d)</span>
+              <strong>{sentryData ? sentryData.stats.critical : "—"}</strong>
+              <small>{sentryData ? `${sentryData.stats.warnings} warnings · ${sentryData.stats.affected_users} users affected` : "Loading…"}</small>
+            </article>
+          </div>
+
+          <div className="workflow-overview-v2-grid">
+            <article className="workflow-overview-v2-card blue">
+              <div className="workflow-overview-v2-icon"><Building2 size={18} /></div>
+              <span>Pro Companies</span>
+              <strong>{overview.stats.total_organizations}</strong>
+              <small>{overview.stats.suspended_organizations} suspended</small>
+            </article>
+            <article className="workflow-overview-v2-card green">
+              <div className="workflow-overview-v2-icon"><Wifi size={18} /></div>
+              <span>Online Hubs</span>
+              <strong>{overview.stats.online_devices} / {overview.stats.total_devices}</strong>
+              <small>Seen in last 2 minutes</small>
+            </article>
+            <article className="workflow-overview-v2-card teal">
+              <div className="workflow-overview-v2-icon"><Link2 size={18} /></div>
+              <span>Assigned Devices</span>
+              <strong>{overview.stats.total_devices - overview.stats.unassigned_devices}</strong>
+              <small>{overview.stats.unassigned_devices} unassigned</small>
+            </article>
+            <article className="workflow-overview-v2-card orange">
+              <div className="workflow-overview-v2-icon"><KeyRound size={18} /></div>
+              <span>Unclaimed</span>
+              <strong>{overview.stats.unclaimed_devices}</strong>
+              <small>Waiting for customer setup</small>
+            </article>
+            <article className="workflow-overview-v2-card purple">
+              <div className="workflow-overview-v2-icon"><UserRoundPlus size={18} /></div>
+              <span>Pending Invites</span>
+              <strong>{overview.stats.pending_invites}</strong>
+              <small>Awaiting acceptance</small>
+            </article>
+            <article className="workflow-overview-v2-card red">
+              <div className="workflow-overview-v2-icon"><Database size={18} /></div>
+              <span>Total Records</span>
+              <strong>{overview.devices.length + overview.claims.length}</strong>
+              <small>{overview.devices.length} devices · {overview.claims.length} claims</small>
+            </article>
+          </div>
+
+          <div className="workflow-overview-v2-lanes">
+            <article className="workflow-overview-v2-lane">
+              <header>
+                <FileCode2 size={16} />
+                <span>Firmware</span>
+              </header>
+              <div className="workflow-overview-v2-firmware">
+                <div>
+                  <small>Hub version</small>
+                  <strong>{latestHubTemplate?.version || "Not saved"}</strong>
+                  <span>{latestHubTemplate ? `Updated ${formatShortDateTime(latestHubTemplate.updated_at)}` : "Paste latest code in Firmware section"}</span>
+                </div>
+                <div>
+                  <small>Node version</small>
+                  <strong>{latestNodeTemplate?.version || "Not saved"}</strong>
+                  <span>{latestNodeTemplate ? `Updated ${formatShortDateTime(latestNodeTemplate.updated_at)}` : "Paste latest code in Firmware section"}</span>
+                </div>
               </div>
             </article>
 
-            <div className="workflow-overview-bands">
-              {overviewBand("Online hubs", overview.stats.online_devices, "Seen in the last 2 minutes", <Wifi size={21} />, "online")}
-              {overviewBand("Unclaimed hubs", overview.stats.unclaimed_devices, `${overview.stats.pending_invites} pending invites`, <UserRoundPlus size={21} />, overview.stats.unclaimed_devices > 0 ? "attention" : "")}
-              {overviewBand("Unassigned devices", overview.stats.unassigned_devices, "Registered but not linked to a company", <Database size={21} />, overview.stats.unassigned_devices > 0 ? "attention" : "")}
-            </div>
-          </section>
-
-          <section className="workflow-overview-lanes">
-            <article className="workflow-overview-lane">
-              <div className="workflow-overview-heading">
-                <span>Manufacturing / Inventory</span>
-                <h2>Hardware readiness</h2>
-              </div>
-              <div className="workflow-overview-bands compact">
-                {overviewBand("Ready-to-claim devices", readyToClaimDevices, "Registered and waiting for customer setup", <KeyRound size={20} />, "online")}
-                {overviewBand("Missing firmware download", devicesMissingFirmwareDownload, `${hubFirmwareDownloadedDevices} hub downloads recorded`, <Download size={20} />, devicesMissingFirmwareDownload > 0 ? "attention" : "online")}
-                {overviewBand("Latest hub firmware", latestHubTemplate?.version || "Not saved", latestHubTemplate ? `Updated ${formatShortDateTime(latestHubTemplate.updated_at)}` : "Paste latest hub code", <FileCode2 size={20} />, latestHubTemplate ? "online" : "attention")}
-                {overviewBand("Latest node firmware", latestNodeTemplate?.version || "Not saved", latestNodeTemplate ? `Updated ${formatShortDateTime(latestNodeTemplate.updated_at)}` : "Paste latest node code", <Settings size={20} />, latestNodeTemplate ? "online" : "attention")}
-              </div>
-            </article>
-
-            <article className="workflow-overview-lane revenue">
-              <div className="workflow-overview-heading">
-                <span>Revenue Snapshot</span>
-                <h2>Monthly subscription view</h2>
-              </div>
-              <div className="workflow-overview-bands compact">
-                {overviewBand("Estimated monthly revenue", formatCurrency(revenueSnapshot.estimatedMonthlyRevenue), "Home $9 + Pro $19; enterprise excluded", <DollarSign size={20} />, "online")}
-                {overviewBand("Pro customers", revenueSnapshot.activeProCustomers, `${overview.stats.suspended_organizations} suspended`, <Building2 size={20} />)}
-                {overviewBand("Homeowner customers", revenueSnapshot.homeownerCustomers, "Claimed devices outside Pro accounts", <UserRoundPlus size={20} />)}
-                {overviewBand("Average per device", formatCurrency(revenueSnapshot.averageRevenuePerDevice), `${overview.stats.total_devices} registered devices`, <Database size={20} />)}
+            <article className="workflow-overview-v2-lane">
+              <header>
+                <DollarSign size={16} />
+                <span>Revenue this month</span>
+              </header>
+              <div className="workflow-overview-v2-mini-grid">
+                <div>
+                  <small>Gross</small>
+                  <strong>{revenue ? formatCurrency(revenue.current_month.gross_revenue_cents / 100) : "—"}</strong>
+                </div>
+                <div>
+                  <small>Net</small>
+                  <strong>{revenue ? formatCurrency(revenue.current_month.net_revenue_cents / 100) : "—"}</strong>
+                </div>
+                <div>
+                  <small>Available payout</small>
+                  <strong>{revenue ? formatCurrency(revenue.balance.available_cents / 100) : "—"}</strong>
+                </div>
               </div>
             </article>
-          </section>
-        </>
+          </div>
+        </section>
         ) : null}
 
         {["registerDevice", "createProAccount", "assignDevice"].includes(activeSection) ? (
