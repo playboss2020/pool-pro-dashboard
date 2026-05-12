@@ -45,9 +45,9 @@ import {
   nodeFirmwareFileName,
   pairIdForDevice,
 } from "../lib/firmwareDownload";
-import type { PoolDevice } from "../lib/deviceApi";
+import type { OrganizationMember, PoolDevice } from "../lib/deviceApi";
 import { DashboardPage } from "./DashboardPage";
-import { DemoProDashboardPage } from "./DemoDashboardPage";
+import { ProDashboardPage } from "./ProDashboardPage";
 
 type WorkflowAdminPageProps = {
   overview: WorkflowAdminOverview;
@@ -238,6 +238,7 @@ export function WorkflowAdminPage({
   const [firmwareSaving, setFirmwareSaving] = useState(false);
   const [firmwareMessage, setFirmwareMessage] = useState("");
   const [firmwareError, setFirmwareError] = useState("");
+  const [testProOrgId, setTestProOrgId] = useState("");
 
   const unassignedDevices = useMemo(
     () => overview.devices.filter((device) => !device.organization_id),
@@ -726,17 +727,80 @@ export function WorkflowAdminPage({
           </section>
         ) : null}
 
-        {activeSection === "testProDashboard" ? (
-          <section className="workflow-section" id="workflow-test-pro-dashboard">
-            <div className="workflow-section-heading">
-              <h2>Live Pro dashboard test</h2>
-              <p>Walk through every Pro feature — fleet view, properties, schedules, members, billing. Drill into any property to open the live homeowner dashboard.</p>
-            </div>
-            <div className="workflow-test-dashboard-frame">
-              <DemoProDashboardPage />
-            </div>
-          </section>
-        ) : null}
+        {activeSection === "testProDashboard" ? (() => {
+          const activeOrgId = testProOrgId || overview.organizations[0]?.id || "";
+          const activeOrg = overview.organizations.find((o) => o.id === activeOrgId) ?? null;
+          const orgDevices = activeOrg ? overview.devices.filter((d) => d.organization_id === activeOrg.id) : [];
+          const orgMembers = activeOrg ? overview.members.filter((m) => m.organization_id === activeOrg.id) : [];
+          const orgInvites = activeOrg ? overview.invites.filter((i) => i.organization_id === activeOrg.id) : [];
+          const adminMembership: OrganizationMember = {
+            organization_id: activeOrg?.id ?? "",
+            user_id: testUserId ?? "admin",
+            role: "owner",
+            display_name: "Workflow Admin",
+            email: overview.admin_email,
+            created_at: new Date().toISOString(),
+          };
+          return (
+            <section className="workflow-section" id="workflow-test-pro-dashboard">
+              <div className="workflow-section-heading">
+                <h2>Live Pro dashboard test</h2>
+                <p>Walk through every Pro feature with real data — fleet view, properties, schedules, members. Drill into any property to open the live homeowner dashboard with that device's real-time data.</p>
+              </div>
+
+              {overview.organizations.length === 0 ? (
+                <div className="workflow-empty-state">
+                  No Pro organizations exist yet. Create one in <strong>Create Pro</strong> first.
+                </div>
+              ) : (
+                <>
+                  <div className="workflow-test-org-picker">
+                    <label>
+                      <span>Select an organization</span>
+                      <select
+                        value={activeOrgId}
+                        onChange={(event) => setTestProOrgId(event.target.value)}
+                      >
+                        {overview.organizations.map((org) => (
+                          <option key={org.id} value={org.id}>
+                            {org.name} · {org.plan} · {org.device_count} device{org.device_count === 1 ? "" : "s"}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <small>You're viewing this dashboard as the company owner. Device commands run live on the hub.</small>
+                  </div>
+
+                  {activeOrg ? (
+                    <div className="workflow-test-dashboard-frame">
+                      <ProDashboardPage
+                        organization={activeOrg}
+                        membership={adminMembership}
+                        devices={orgDevices as unknown as PoolDevice[]}
+                        members={orgMembers}
+                        invites={orgInvites}
+                        scheduleOverrides={[]}
+                        onSignOut={onSignOut}
+                        onOpenDevice={(deviceId) => {
+                          showWorkflowSection("testDashboard");
+                          // The Test Dashboard uses the admin's own selected hub; deep-link awareness can be added later
+                          console.info("[admin test] open device", deviceId);
+                        }}
+                        onOrganizationUpdated={() => void onRefresh()}
+                        onPropertyUpdated={() => void onRefresh()}
+                        onScheduleOverrideSaved={() => {}}
+                        onScheduleOverrideCancelled={() => {}}
+                        onInviteCreated={() => void onRefresh()}
+                        onMemberRemoved={() => void onRefresh()}
+                        onInviteCancelled={() => void onRefresh()}
+                      />
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </section>
+          );
+        })() : null}
 
         {activeSection !== "firmware" && activeSection !== "testDashboard" && activeSection !== "testProDashboard" ? (
           <>
