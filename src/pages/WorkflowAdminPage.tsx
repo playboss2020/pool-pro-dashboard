@@ -1177,7 +1177,9 @@ export function WorkflowAdminPage({
         </section>
         ) : null}
           </>
-        ) : (
+        ) : null}
+
+        {activeSection === "firmware" ? (
           <>
             <section className="workflow-stats-grid">
               {statCard(
@@ -1310,7 +1312,7 @@ export function WorkflowAdminPage({
               </div>
             </section>
           </>
-        )}
+        ) : null}
       </main>
     </div>
   );
