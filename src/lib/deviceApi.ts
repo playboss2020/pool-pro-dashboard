@@ -1127,3 +1127,49 @@ export async function fetchHistory(
     sample_count: row.sample_count ?? 0,
   }));
 }
+
+export type StripeRevenueOverview = {
+  mrr_cents: number;
+  active_subscriptions: number;
+  plans_count: Record<string, number>;
+  current_month: {
+    gross_revenue_cents: number;
+    stripe_fees_cents: number;
+    net_revenue_cents: number;
+    refunds_cents: number;
+    charges_count: number;
+  };
+  balance: {
+    available_cents: number;
+    pending_cents: number;
+    currency: string;
+  };
+  recent_payouts: Array<{
+    id: string;
+    amount_cents: number;
+    arrival_date: number;
+    status: string;
+    currency: string;
+  }>;
+  recent_charges: Array<{
+    id: string;
+    amount_cents: number;
+    currency: string;
+    status: string;
+    created: number;
+    customer_email: string | null;
+    description: string | null;
+    refunded: boolean;
+  }>;
+  monthly_revenue: Array<{ month: string; amount_cents: number }>;
+};
+
+export async function fetchStripeRevenueOverview() {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke<StripeRevenueOverview>("stripe-admin-overview", {
+    body: {},
+  });
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("No data returned");
+  return data;
+}

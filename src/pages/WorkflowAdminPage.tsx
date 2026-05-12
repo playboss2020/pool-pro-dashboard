@@ -45,7 +45,8 @@ import {
   nodeFirmwareFileName,
   pairIdForDevice,
 } from "../lib/firmwareDownload";
-import type { OrganizationMember, PoolDevice } from "../lib/deviceApi";
+import type { OrganizationMember, PoolDevice, StripeRevenueOverview } from "../lib/deviceApi";
+import { fetchStripeRevenueOverview } from "../lib/deviceApi";
 import { DashboardPage } from "./DashboardPage";
 import { ProDashboardPage } from "./ProDashboardPage";
 
@@ -63,6 +64,7 @@ type WorkflowAdminPageProps = {
 
 type AdminSection =
   | "overview"
+  | "revenue"
   | "createProAccount"
   | "proCompanies"
   | "assignDevice"
@@ -190,6 +192,7 @@ function workflowHeaderTitle(section: AdminSection) {
   if (section === "claims") return "Review device claim records for customer onboarding.";
   if (section === "testDashboard") return "Live test of the homeowner dashboard with your real devices.";
   if (section === "testProDashboard") return "Live test of the full Pro dashboard experience.";
+  if (section === "revenue") return "Live Stripe revenue, subscriptions, and payouts.";
   return "Manage Pro accounts, devices, and onboarding.";
 }
 
@@ -239,6 +242,27 @@ export function WorkflowAdminPage({
   const [firmwareMessage, setFirmwareMessage] = useState("");
   const [firmwareError, setFirmwareError] = useState("");
   const [testProOrgId, setTestProOrgId] = useState("");
+  const [revenue, setRevenue] = useState<StripeRevenueOverview | null>(null);
+  const [revenueLoading, setRevenueLoading] = useState(false);
+  const [revenueError, setRevenueError] = useState("");
+
+  async function loadRevenue() {
+    setRevenueLoading(true);
+    setRevenueError("");
+    try {
+      setRevenue(await fetchStripeRevenueOverview());
+    } catch (err) {
+      setRevenueError(err instanceof Error ? err.message : "Unable to load Stripe data");
+    } finally {
+      setRevenueLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (activeSection === "revenue" && !revenue && !revenueLoading) {
+      void loadRevenue();
+    }
+  }, [activeSection]);
 
   const unassignedDevices = useMemo(
     () => overview.devices.filter((device) => !device.organization_id),
@@ -597,6 +621,16 @@ export function WorkflowAdminPage({
             Overview
           </button>
 
+          <span className="workflow-admin-nav-group">Business</span>
+          <button
+            type="button"
+            className={activeSection === "revenue" ? "active" : ""}
+            onClick={() => showWorkflowSection("revenue")}
+          >
+            <DollarSign size={17} />
+            Revenue
+          </button>
+
           <span className="workflow-admin-nav-group">Pro Accounts</span>
           <button
             type="button"
@@ -802,7 +836,135 @@ export function WorkflowAdminPage({
           );
         })() : null}
 
-        {activeSection !== "firmware" && activeSection !== "testDashboard" && activeSection !== "testProDashboard" ? (
+        {activeSection === "revenue" ? (
+          <section className="workflow-section" id="workflow-revenue">
+            <div className="workflow-section-heading">
+              <h2>Revenue & subscriptions</h2>
+              <p>Live data pulled from Stripe. Use this to track MRR, payouts, and recent activity.</p>
+            </div>
+
+            {revenueLoading && !revenue ? (
+              <div className="workflow-empty-state">Loading Stripe data…</div>
+            ) : null}
+            {revenueError ? <div className="error-box">{revenueError}</div> : null}
+
+            {revenue ? (
+              <>
+                <div className="workflow-revenue-grid">
+                  <article className="workflow-revenue-card highlight">
+                    <span>Monthly Recurring Revenue</span>
+                    <strong>{formatCurrency(revenue.mrr_cents / 100)}</strong>
+                    <small>{revenue.active_subscriptions} active subscription{revenue.active_subscriptions === 1 ? "" : "s"}</small>
+                  </article>
+                  <article className="workflow-revenue-card">
+                    <span>This month gross</span>
+                    <strong>{formatCurrency(revenue.current_month.gross_revenue_cents / 100)}</strong>
+                    <small>{revenue.current_month.charges_count} charge{revenue.current_month.charges_count === 1 ? "" : "s"}</small>
+                  </article>
+                  <article className="workflow-revenue-card">
+                    <span>Stripe fees this month</span>
+                    <strong>{formatCurrency(revenue.current_month.stripe_fees_cents / 100)}</strong>
+                    <small>Net: {formatCurrency(revenue.current_month.net_revenue_cents / 100)}</small>
+                  </article>
+                  <article className="workflow-revenue-card">
+                    <span>Refunds this month</span>
+                    <strong>{formatCurrency(revenue.current_month.refunds_cents / 100)}</strong>
+                    <small>Disputes excluded</small>
+                  </article>
+                  <article className="workflow-revenue-card">
+                    <span>Available for payout</span>
+                    <strong>{formatCurrency(revenue.balance.available_cents / 100)}</strong>
+                    <small>{revenue.balance.currency.toUpperCase()}</small>
+                  </article>
+                  <article className="workflow-revenue-card">
+                    <span>Pending in Stripe</span>
+                    <strong>{formatCurrency(revenue.balance.pending_cents / 100)}</strong>
+                    <small>Settling now</small>
+                  </article>
+                </div>
+
+                {Object.keys(revenue.plans_count).length > 0 ? (
+                  <div className="workflow-revenue-plans">
+                    <h3>Active subscriptions by plan</h3>
+                    <div className="workflow-revenue-plan-list">
+                      {Object.entries(revenue.plans_count).map(([plan, count]) => (
+                        <div key={plan} className="workflow-revenue-plan-row">
+                          <strong>{plan}</strong>
+                          <span>{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {revenue.monthly_revenue.length > 0 ? (
+                  <div className="workflow-revenue-trend">
+                    <h3>Monthly revenue (last 6 months)</h3>
+                    <div className="workflow-revenue-bars">
+                      {(() => {
+                        const max = Math.max(...revenue.monthly_revenue.map((m) => m.amount_cents), 1);
+                        return revenue.monthly_revenue.map((m) => (
+                          <div key={m.month} className="workflow-revenue-bar">
+                            <div className="workflow-revenue-bar-fill" style={{ height: `${(m.amount_cents / max) * 100}%` }} />
+                            <span className="workflow-revenue-bar-label">{m.month.slice(5)}</span>
+                            <span className="workflow-revenue-bar-amount">{formatCurrency(m.amount_cents / 100)}</span>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="workflow-revenue-table-wrap">
+                  <h3>Recent charges</h3>
+                  {revenue.recent_charges.length === 0 ? (
+                    <p className="workflow-empty">No recent charges this month.</p>
+                  ) : (
+                    <table className="workflow-revenue-table">
+                      <thead>
+                        <tr><th>Date</th><th>Email</th><th>Amount</th><th>Status</th></tr>
+                      </thead>
+                      <tbody>
+                        {revenue.recent_charges.map((c) => (
+                          <tr key={c.id}>
+                            <td>{formatShortDateTime(new Date(c.created * 1000).toISOString())}</td>
+                            <td>{c.customer_email ?? "—"}</td>
+                            <td>{formatCurrency(c.amount_cents / 100)}</td>
+                            <td>{c.refunded ? "Refunded" : c.status}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+
+                <div className="workflow-revenue-table-wrap">
+                  <h3>Recent payouts to your bank</h3>
+                  {revenue.recent_payouts.length === 0 ? (
+                    <p className="workflow-empty">No payouts yet.</p>
+                  ) : (
+                    <table className="workflow-revenue-table">
+                      <thead>
+                        <tr><th>Arrival</th><th>Amount</th><th>Status</th></tr>
+                      </thead>
+                      <tbody>
+                        {revenue.recent_payouts.map((p) => (
+                          <tr key={p.id}>
+                            <td>{formatShortDateTime(new Date(p.arrival_date * 1000).toISOString())}</td>
+                            <td>{formatCurrency(p.amount_cents / 100)}</td>
+                            <td>{p.status}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </>
+            ) : null}
+          </section>
+        ) : null}
+
+        {activeSection !== "firmware" && activeSection !== "testDashboard" && activeSection !== "testProDashboard" && activeSection !== "revenue" ? (
           <>
         {activeSection === "overview" ? (
         <>
