@@ -4594,6 +4594,19 @@ button:disabled {
   box-shadow: 0 14px 34px rgba(24, 148, 189, 0.26);
 }
 
+.workflow-admin-mark-logo {
+  background: linear-gradient(145deg, #062d4a, #0a4d72) center/68% no-repeat;
+  background-image:
+    linear-gradient(145deg, rgba(6, 45, 74, 0.0), rgba(10, 77, 114, 0.0)),
+    var(--admin-logo);
+}
+.workflow-admin-mark-logo[style*="url("] {
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 76%;
+  background-color: #062d4a;
+}
+
 .workflow-admin-brand strong,
 .workflow-admin-identity strong {
   display: block;

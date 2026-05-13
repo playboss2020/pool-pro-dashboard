@@ -55,6 +55,8 @@ import type {
   StripeRevenueOverview,
 } from "../lib/deviceApi";
 import { fetchSentryAdminIssues, fetchStripeRevenueOverview, resolveSentryIssue } from "../lib/deviceApi";
+import { useTransparentImage } from "../hooks/useTransparentImage";
+import workflowLogo from "../assets/workflow-pool-logo.png";
 import { DashboardPage } from "./DashboardPage";
 import { ProDashboardPage } from "./ProDashboardPage";
 
@@ -217,6 +219,7 @@ export function WorkflowAdminPage({
   onTestRefresh,
   onTestCommandSettled,
 }: WorkflowAdminPageProps) {
+  const cleanWorkflowLogo = useTransparentImage(workflowLogo);
   const [activeSection, setActiveSection] = useState<AdminSection>("overview");
   const [companyName, setCompanyName] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
@@ -748,9 +751,11 @@ export function WorkflowAdminPage({
     <div className="workflow-admin-shell">
       <aside className="workflow-admin-sidebar">
         <div className="workflow-admin-brand">
-          <div className="workflow-admin-mark">
-            <ShieldCheck size={20} />
-          </div>
+          <div
+            className="workflow-admin-mark workflow-admin-mark-logo"
+            style={{ backgroundImage: `url(${cleanWorkflowLogo})` }}
+            aria-label="Workflow Pool"
+          />
           <div>
             <strong>Workflow Admin</strong>
             <span>Internal owner dashboard</span>
